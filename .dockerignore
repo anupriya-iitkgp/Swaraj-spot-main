@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.claude/
+docs/
+tests/
+production/
+run_demo.py
+simulate.py
+README.md

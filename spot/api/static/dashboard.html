@@ -1,0 +1,2613 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="#2a78d6,#eb6834,#1baf7a,#eda100,#e87ba4">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spot Capacity — Operations Console</title>
+<style>
+/* ---------- palette: validated categorical slots 1-5, both modes ---------- */
+:root, .viz-root{
+  color-scheme: light;
+  --surface:#ffffff; --plane:#f3f5f8; --ink:#111418; --ink2:#4a5361; --muted:#8a919e;
+  --grid:#e5e8ee; --axis:#c6ccd6; --border:rgba(17,20,24,.09);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4;
+  --free:#e7eaef;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --good-text:#006300;
+  --accent-soft:rgba(42,120,214,.10);
+  --side-bg:#ffffff; --side-ink:#434d5c; --side-muted:#8a919e; --side-strong:#131720;
+  --side-line:rgba(17,20,24,.08); --side-hover:rgba(17,20,24,.05);
+  --side-active:rgba(42,120,214,.10); --side-active-ink:#2467bd;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface:#171b22; --plane:#0e1116; --ink:#f2f4f8; --ink2:#b8bfcc; --muted:#818999;
+    --grid:#272c36; --axis:#3a4150; --border:rgba(255,255,255,.09);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+    --free:#232833;
+    --good-text:#0ca30c;
+    --accent-soft:rgba(57,135,229,.16);
+    --side-bg:#0b0f17; --side-ink:#cfd6e2; --side-muted:#7d879a; --side-strong:#f2f5fa;
+    --side-line:rgba(255,255,255,.08); --side-hover:rgba(255,255,255,.06);
+    --side-active:rgba(96,156,255,.17); --side-active-ink:#9dc4ff;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface:#171b22; --plane:#0e1116; --ink:#f2f4f8; --ink2:#b8bfcc; --muted:#818999;
+  --grid:#272c36; --axis:#3a4150; --border:rgba(255,255,255,.09);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+  --free:#232833;
+  --good-text:#0ca30c;
+  --accent-soft:rgba(57,135,229,.16);
+  --side-bg:#0b0f17; --side-ink:#cfd6e2; --side-muted:#7d879a; --side-strong:#f2f5fa;
+  --side-line:rgba(255,255,255,.08); --side-hover:rgba(255,255,255,.06);
+  --side-active:rgba(96,156,255,.17); --side-active-ink:#9dc4ff;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}  /* the hidden attribute must always beat class display rules */
+body{background:var(--plane);color:var(--ink);
+  font-family:"Inter","SF Pro Text","Segoe UI",system-ui,-apple-system,sans-serif;
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  overflow-anchor:none}   /* charts redraw each second — never let the browser re-anchor scroll */
+h1{font-size:22px;font-weight:750;letter-spacing:-.4px}
+h2{font-size:14.5px;font-weight:750;letter-spacing:.8px;text-transform:uppercase;color:var(--ink)}
+.sub{color:var(--ink2);font-size:12.5px}
+a{color:var(--s1)}
+
+/* ================= application shell ================= */
+.shell{display:flex;min-height:100vh}
+aside.side{width:232px;flex:none;background:var(--side-bg);
+  border-right:1px solid var(--side-line);
+  position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:18px 13px 14px}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px 16px;
+  border-bottom:1px solid var(--side-line);margin-bottom:12px}
+.brand .mark{width:36px;height:36px;border-radius:10px;flex:none;
+  background:linear-gradient(135deg,var(--s1),var(--s3));display:flex;align-items:center;
+  justify-content:center;color:#fff;font-weight:800;font-size:16px;letter-spacing:-.5px;
+  box-shadow:0 3px 10px rgba(42,120,214,.35)}
+.brand .name{font-size:14px;font-weight:700;letter-spacing:-.2px;line-height:1.2;color:var(--side-strong)}
+.brand .env{font-size:10px;color:var(--side-muted);text-transform:uppercase;letter-spacing:.9px}
+.badge-int{font-size:9px;font-weight:700;letter-spacing:.7px;color:#f5b544;
+  border:1px solid currentColor;border-radius:4px;padding:1px 5px;vertical-align:2px}
+nav.nav{display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto}
+nav.nav .group{font-size:10px;color:var(--side-muted);text-transform:uppercase;letter-spacing:.9px;
+  padding:13px 10px 5px}
+nav.nav a{display:flex;align-items:center;gap:10px;padding:8.5px 10px;border-radius:9px;
+  color:var(--side-ink);text-decoration:none;font-size:13.3px;font-weight:500;white-space:nowrap;
+  transition:background .15s,color .15s}
+nav.nav a svg{width:16px;height:16px;flex:none;opacity:.7}
+nav.nav a:hover{background:var(--side-hover);color:var(--side-strong)}
+nav.nav a.active{background:var(--side-active);color:var(--side-active-ink);font-weight:650;
+  box-shadow:inset 2.5px 0 0 var(--s1)}
+nav.nav a.active svg{opacity:1}
+nav.nav a .count{margin-left:auto;font-size:10.5px;font-weight:700;color:var(--side-muted);
+  background:var(--side-hover);border-radius:999px;padding:1px 7px;font-variant-numeric:tabular-nums}
+nav.nav a.active .count{color:var(--side-active-ink)}
+.side .foot{border-top:1px solid var(--side-line);padding:10px 8px 0;font-size:11px;
+  color:var(--side-muted)}
+.side .foot a{color:var(--side-muted)}
+.side-toggle{margin:8px 6px 8px;background:var(--side-hover);
+  border:1px solid var(--side-line);color:var(--side-ink);border-radius:8px;
+  padding:5px;font-size:13px;line-height:1}
+.side-toggle:hover{background:var(--side-active);border-color:var(--side-active-ink)}
+aside.side.collapsed{width:66px;padding:18px 9px 14px}
+aside.side.collapsed .brand{justify-content:center;padding:0 0 14px}
+aside.side.collapsed .brand>div:last-child{display:none}
+aside.side.collapsed nav.nav .lbl,aside.side.collapsed nav.nav .count,
+aside.side.collapsed nav.nav .group,aside.side.collapsed .foot{display:none}
+aside.side.collapsed nav.nav a{justify-content:center;padding:11px 0}
+aside.side.collapsed nav.nav a svg{width:18px;height:18px}
+
+main.main{flex:1;min-width:0;padding:0 22px 40px}
+
+/* ================= sticky header + live status bar ================= */
+header.top{position:sticky;top:0;z-index:40;margin:0 -22px 16px;padding:12px 22px 12px;
+  background:var(--plane);border-bottom:1px solid var(--border);
+  box-shadow:0 4px 14px rgba(0,0,0,.05)}
+header.top .title-row{display:flex;align-items:center;gap:14px;flex-wrap:nowrap}
+header.top .title-row > div:first-child{min-width:0;flex:1}
+header.top .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header.top .pill,header.top button{flex:none;white-space:nowrap}
+header .spacer{display:none}
+@media (max-width:1250px){ #cycle-pill{display:none} }
+@media (max-width:980px){ #backend-pill{display:none} }
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);
+  border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:4px 11px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);
+  animation:livepulse 2.2s ease-out infinite}
+.dot.stale{background:var(--critical);animation:none}
+@keyframes livepulse{0%{box-shadow:0 0 0 0 rgba(12,163,12,.45)}
+  70%{box-shadow:0 0 0 6px rgba(12,163,12,0)}100%{box-shadow:0 0 0 0 rgba(12,163,12,0)}}
+button,select,input{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+button{cursor:pointer;transition:background .15s,border-color .15s,filter .15s,transform .06s}
+button:hover{border-color:var(--axis)}
+button:active{transform:translateY(1px)}
+button.primary:hover,button.danger:hover{filter:brightness(1.1)}
+button.primary{background:var(--s1);color:#fff;border-color:transparent;font-weight:600}
+button.danger{background:var(--critical);color:#fff;border-color:transparent;font-weight:600}
+button.ghost{background:transparent}
+button.trange.active,button.drange.active{background:var(--accent-soft);color:var(--s1);
+  border-color:transparent;font-weight:650}
+
+.statbar{padding:0 0 8px;margin-top:8px;border-top:1px solid var(--grid)}
+.stat-row{display:flex;align-items:stretch;flex-wrap:nowrap;overflow-x:auto;
+  scrollbar-width:thin;padding:9px 0 2px}
+.stat-row + .stat-row{border-top:1px dashed var(--grid);margin-top:7px;padding-top:9px}
+#stat-more-btn{margin-left:auto;flex:none;font-size:11.5px;padding:3px 11px;align-self:center;
+  color:var(--ink2)}
+.stat .k select{font:inherit;font-size:10px;font-weight:700;letter-spacing:.6px;
+  text-transform:uppercase;border:none;background:transparent;color:var(--s1);
+  padding:0 1px;cursor:pointer}
+.stat{padding:0 14px;border-left:1px solid var(--grid);white-space:nowrap;flex:none}
+.stat:first-child{border-left:none;padding-left:0}
+.stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.stat .v{font-size:16.5px;font-weight:650;letter-spacing:-.25px;margin-top:1px;
+  font-variant-numeric:tabular-nums}
+.stat .v small{font-size:11px;color:var(--ink2);font-weight:400;letter-spacing:0}
+.stat .microbar{height:3.5px;border-radius:2px;background:var(--free);overflow:hidden;
+  display:flex;margin-top:4px}
+.stat .microbar i{display:block;height:100%}
+.stat.warn .v{color:var(--serious)}
+.stat.bad .v{color:var(--critical)}
+.stat.good .v{color:var(--good-text)}
+
+/* ================= pages ================= */
+.page{display:none}
+.page.active{display:block;animation:fadein .18s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.page-head{margin-bottom:14px}
+.page-head .sub{margin-top:1px}
+
+.grid{display:grid;gap:16px}
+.c4{grid-template-columns:repeat(4,1fr)}
+.c7{grid-template-columns:repeat(7,1fr)}
+.split{grid-template-columns:1.5fr 1fr}
+.split3{grid-template-columns:1fr 1fr 1fr}
+.split-lr{grid-template-columns:1.35fr 1fr}
+@media (max-width:1500px){.c7{grid-template-columns:repeat(4,1fr)}
+  .split,.split-lr{grid-template-columns:1fr}.split3{grid-template-columns:1fr}}
+@media (max-width:900px){
+  .shell{flex-direction:column}
+  aside.side{width:100%;height:auto;position:static;flex-direction:row;align-items:center;
+    overflow-x:auto;padding:10px 12px}
+  .brand{border-bottom:none;padding:0 12px 0 0;margin:0}
+  nav.nav{flex-direction:row}
+  nav.nav .group,.side .foot{display:none}
+}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;
+  box-shadow:0 1px 3px rgba(15,23,42,.05);transition:box-shadow .18s,transform .18s}
+.card:hover{box-shadow:0 6px 18px rgba(15,23,42,.08)}
+.card>header{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap;
+  padding-bottom:9px;border-bottom:1px solid var(--grid)}
+.card .hint{font-size:11.5px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400}
+
+/* stat tiles */
+.tile .label{font-size:11.5px;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px}
+.tile .value{font-size:27px;font-weight:600;letter-spacing:-.6px;margin-top:2px}
+.tile .unit{font-size:14px;color:var(--ink2);font-weight:400;margin-left:3px}
+.tile .foot{font-size:11.5px;color:var(--muted);margin-top:2px}
+.meter{height:6px;border-radius:3px;background:var(--free);margin-top:8px;overflow:hidden;display:flex}
+.meter i{display:block;height:100%}
+
+/* legend */
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.8px;color:var(--ink2);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;border:1px solid var(--border)}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:12.4px}
+th{text-align:left;font-weight:600;color:var(--ink2);font-size:11.4px;text-transform:uppercase;
+  letter-spacing:.4px;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;
+  position:sticky;top:0;background:var(--surface);z-index:1}
+td{padding:6px 8px;border-bottom:1px solid var(--grid);vertical-align:middle;
+  font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--plane)}
+td.num,th.num{text-align:right}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11.6px}
+.scroll{max-height:300px;overflow:auto}
+.scroll.tall{max-height:520px}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.3px;font-weight:600;
+  border-radius:999px;padding:2px 9px;border:1px solid var(--border);white-space:nowrap}
+.chip i{width:7px;height:7px;border-radius:50%}
+.bar-mini{height:5px;border-radius:3px;background:var(--free);overflow:hidden;display:flex;min-width:60px}
+.bar-mini i{height:100%}
+
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.4px;line-height:1.65}
+.log div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tick{color:var(--muted)}
+svg{display:block;overflow:visible}
+nav.nav svg,.brand svg{overflow:hidden}
+.tooltip{position:fixed;pointer-events:none;z-index:50;background:var(--surface);
+  border:1px solid var(--axis);border-radius:8px;padding:8px 10px;font-size:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,.14);opacity:0;transition:opacity .08s}
+.tooltip table{font-size:11.8px}
+.tooltip td{border:none;padding:1px 0}
+.tooltip td:first-child{padding-right:12px}
+.err{color:var(--critical);font-size:12px}
+.ok{color:var(--good-text);font-size:12px}
+footer{margin-top:20px;color:var(--muted);font-size:11.5px}
+
+/* fixed chart-host heights: redraws must never change page height,
+   or the browser yanks the scroll position back up every second */
+#area-chart{min-height:260px}
+#trend-chart{min-height:300px}
+#hg-chart{min-height:56px}
+
+/* event toasts */
+#toasts{position:fixed;right:16px;bottom:16px;z-index:90;display:flex;
+  flex-direction:column;gap:8px;max-width:360px;pointer-events:none}
+.toast{background:var(--surface);border:1px solid var(--border);
+  border-left:3px solid var(--s1);border-radius:10px;padding:9px 12px;
+  font-size:12.5px;box-shadow:0 10px 30px rgba(0,0,0,.28);animation:fadein .2s}
+.toast.crit{border-left-color:var(--critical)}
+.toast.good{border-left-color:var(--good)}
+.toast.warn{border-left-color:var(--s4)}
+.toast .t-top{font-weight:650}
+.toast .t-sub{color:var(--muted);font-size:11px;
+  font-family:ui-monospace,Menlo,monospace;word-break:break-all}
+
+/* live preemption banner */
+#preempt-banner{display:none;margin-top:9px;padding:8px 13px;border-radius:10px;
+  background:rgba(208,59,59,.10);border:1px solid rgba(208,59,59,.35);
+  font-size:12.8px;font-weight:600;color:var(--critical)}
+
+/* lease lifecycle pipeline */
+.pipe{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:4px 0}
+.pipe .stage{border:1.5px solid var(--grid);border-radius:10px;padding:6px 12px;
+  text-align:center;min-width:76px;transition:border-color .2s, background .2s}
+.pipe .stage .n{font-size:17px;font-weight:700;line-height:1.1;
+  font-variant-numeric:tabular-nums}
+.pipe .stage .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.5px;white-space:nowrap}
+.pipe .stage.hot{border-color:currentColor;background:var(--accent-soft)}
+.pipe .arrow{color:var(--axis);font-size:15px;flex:none}
+.pipe .stage{cursor:pointer}
+.pipe .stage:hover{border-color:currentColor}
+.stat[data-nav]{cursor:pointer;border-radius:8px}
+.stat[data-nav]:hover .k{color:var(--s1)}
+tr[data-lease]{cursor:pointer}
+.lease-detail td{background:var(--plane);font-size:12px;padding:10px 14px}
+.lease-detail .tl{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.lease-detail .tl span{white-space:nowrap}
+
+/* confirmation dialog */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,13,20,.45);backdrop-filter:blur(2px);
+  display:flex;align-items:center;justify-content:center;z-index:100}
+.modal-overlay[hidden]{display:none}   /* the class display beats the hidden attribute otherwise */
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:20px 22px;width:min(420px,90vw);box-shadow:0 24px 70px rgba(0,0,0,.3);
+  animation:fadein .15s ease}
+.modal h3{font-size:16px;font-weight:700;letter-spacing:-.2px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ================= sidebar ================= -->
+<aside class="side">
+  <div class="brand">
+    <div class="mark">S</div>
+    <div>
+      <div class="name">Spot Console <span class="badge-int">INTERNAL</span></div>
+      <div class="env">capacity operations</div>
+    </div>
+  </div>
+  <nav class="nav" id="nav">
+    <a href="#/overview" data-page="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Dashboard</a>
+    <div class="group">Capacity</div>
+    <a href="#/capacity" data-page="capacity">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-6 4 3 6-8"/><path d="M3 21h18"/></svg>
+      Cluster capacity</a>
+    <a href="#/trends" data-page="trends">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-6 4 3 6-8"/><path d="M14 6h4v4"/><path d="M3 21h18" stroke-dasharray="2 3"/></svg>
+      Resource trends</a>
+    <a href="#/pool" data-page="pool">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+      Spot pool</a>
+    <a href="#/inventory" data-page="inventory">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 13.4L13.4 20.6a2 2 0 01-2.8 0l-7.2-7.2V3.4h10z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+      Published inventory</a>
+    <a href="#/pricing" data-page="pricing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 5L5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+      Pricing <span class="count" id="nav-pricing">auto</span></a>
+    <div class="group">Workloads</div>
+    <a href="#/leases" data-page="leases">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>
+      Leases <span class="count" id="nav-leases">0</span></a>
+    <a href="#/reclaim" data-page="reclaim">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 019-9c2.5 0 4.8 1 6.4 2.6L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-9 9c-2.5 0-4.8-1-6.4-2.6L3 16"/><path d="M3 21v-5h5"/></svg>
+      Reclaim orders <span class="count" id="nav-orders">0</span></a>
+    <a href="#/demand" data-page="demand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V11M11 21V4M17 21v-8"/><path d="M2 21h20"/></svg>
+      Spot demand</a>
+    <div class="group">Operations</div>
+    <a href="#/controls" data-page="controls">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg>
+      Drive the system</a>
+    <a href="#/risk" data-page="risk">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3L2 20h20z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.3" r=".4"/></svg>
+      Risk factors <span class="count" id="nav-risk">—</span></a>
+    <a href="#/logs" data-page="logs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-5-6-5"/><path d="M12 19h8"/></svg>
+      Activity &amp; audit</a>
+  </nav>
+  <button class="side-toggle" id="side-toggle" title="Collapse sidebar">«</button>
+  <div class="foot">
+    Polling <code>/ops/overview</code><br>
+    API reference at <a href="/docs">/docs</a>
+  </div>
+</aside>
+
+<!-- ================= main ================= -->
+<main class="main">
+
+<header class="top">
+  <div class="title-row">
+    <div>
+      <h1 id="page-title">Dashboard</h1>
+      <div class="sub" id="page-sub">Live view of the subsystem: capacity, leases, reclaim and the API traffic driving it.</div>
+    </div>
+    <div class="spacer"></div>
+    <span class="pill" id="backend-pill" title="which hypervisor backend is live">—</span>
+    <span class="pill"><i class="dot" id="conn-dot"></i><span id="conn-text">connecting…</span></span>
+    <span class="pill" id="cycle-pill">—</span>
+    <button class="ghost" id="pause">Pause</button>
+    <button class="ghost" id="theme">Dark</button>
+  </div>
+  <div id="preempt-banner"></div>
+</header>
+
+<!-- ================= page: overview ================= -->
+<section class="page" id="page-overview">
+  <div class="grid c7" id="tiles"></div>
+  <div style="height:14px"></div>
+  <div class="grid">
+    <div class="card">
+      <header><h2>Event stream</h2>
+        <label class="hint" style="cursor:pointer"><input type="checkbox" id="hide-pool" checked
+          style="vertical-align:-2px;margin-right:4px">hide pool.updated</label></header>
+      <div class="scroll log" id="events"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= page: cluster capacity ================= -->
+<section class="page" id="page-capacity">
+  <div class="card">
+    <header>
+      <h2>Cluster capacity over time</h2>
+      <span class="hint" id="ts-window">—</span>
+      <span style="flex:1"></span>
+      <button class="ghost" id="ts-toggle" style="font-size:12px;padding:3px 9px">Table view</button>
+    </header>
+    <div id="area-chart"></div>
+    <div id="area-table" class="scroll" hidden></div>
+    <div class="legend" id="area-legend"></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="card">
+    <header>
+      <h2>Capacity by host group</h2>
+      <span class="hint">vCPU units · direct-labelled</span>
+      <span style="flex:1"></span>
+      <div class="field"><label for="hg-filter">host group</label>
+        <select id="hg-filter"><option value="all">All host groups</option></select></div>
+    </header>
+    <div id="hg-chart"></div>
+    <div class="legend" id="hg-legend"></div>
+    <div style="height:12px"></div>
+    <div class="scroll"><table id="hg-table"></table></div>
+  </div>
+  <div style="height:16px"></div>
+  <div class="card" id="host-card" hidden>
+    <header><h2>Physical host — live</h2>
+      <span class="hint" id="host-sub">real telemetry straight from the hypervisor · refreshed every 5 s</span></header>
+    <div class="grid c4" id="host-gauges" style="margin-bottom:14px"></div>
+    <div class="hint" style="margin-bottom:6px">EVERY GUEST ON THIS NODE — the premium clients are real machines, not a number</div>
+    <div class="scroll"><table id="host-guests"></table></div>
+  </div>
+</section>
+
+<!-- ================= page: resource trends ================= -->
+<section class="page" id="page-trends">
+  <div class="card">
+    <header>
+      <h2>Resource allocation — history &amp; forecast</h2>
+      <span class="hint" id="trend-window">—</span>
+      <span style="flex:1"></span>
+      <button class="ghost trange" data-range="week">Week</button>
+      <button class="ghost trange active" data-range="month">Month</button>
+      <button class="ghost trange" data-range="year">Year</button>
+      <button class="ghost trange" data-range="custom">Custom</button>
+      <span class="row" id="trend-custom" style="display:none">
+        <input type="date" id="trend-start"><span class="hint">to</span>
+        <input type="date" id="trend-end">
+        <button id="trend-apply">Apply</button>
+      </span>
+      <button class="ghost" id="trend-toggle" style="font-size:12px;padding:3px 9px">Table view</button>
+    </header>
+    <div id="trend-chart"></div>
+    <div id="trend-table" class="scroll" hidden></div>
+    <div class="legend" id="trend-legend"></div>
+    <div id="trend-msg" class="err" style="margin-top:6px;min-height:16px"></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="grid c4" id="trend-tiles"></div>
+</section>
+
+<!-- ================= page: spot pool ================= -->
+<section class="page" id="page-pool">
+  <div class="card">
+    <header><h2>Spot pool read model</h2>
+      <span class="hint">sellable = advertised · reserved = held by leases · cooldown = anti-thrash</span></header>
+    <div id="pools-full"></div>
+  </div>
+</section>
+
+<!-- ================= page: inventory ================= -->
+<section class="page" id="page-inventory">
+  <div class="card">
+    <header><h2>Published inventory</h2>
+      <span class="hint">what a spot customer sees — availability, discount, rate and published interruption history</span></header>
+    <div class="scroll tall"><table id="inventory"></table></div>
+  </div>
+</section>
+
+<!-- ================= page: pricing ================= -->
+<section class="page" id="page-pricing">
+  <div class="grid split-lr">
+    <div class="card">
+      <header><h2>Discount policy</h2>
+        <span class="hint">the effective discount is applied at admission and snapshotted onto each lease — never re-rated</span></header>
+      <div id="pricing-status" style="margin-bottom:10px"></div>
+      <div class="scroll"><table id="pricing-table"></table></div>
+      <div class="hint" style="margin-top:10px" id="pricing-curve">—</div>
+    </div>
+    <div class="card">
+      <header><h2>Set pricing</h2>
+        <span class="hint">a manual pin always expires on its own — the curve resumes, so pricing can never be left stuck</span></header>
+      <div class="row" style="align-items:flex-end">
+        <div class="field"><label>mode</label><select id="p-mode">
+          <option value="auto">Automatic — capacity &amp; demand</option>
+          <option value="manual" selected>Manual override</option></select></div>
+      </div>
+      <div class="row" style="align-items:flex-end;margin-top:12px" id="p-manual-fields">
+        <div class="field"><label>discount %</label>
+          <input id="p-discount" type="number" value="65" min="0" max="95" style="width:80px"></div>
+        <div class="field"><label>scope</label>
+          <select id="p-az"><option value="">All AZs</option></select></div>
+        <div class="field"><label>keep this pricing for</label>
+          <select id="p-duration">
+            <option value="1800">30 minutes</option>
+            <option value="3600" selected>1 hour</option>
+            <option value="7200">2 hours</option>
+            <option value="14400">4 hours</option>
+            <option value="28800">8 hours</option>
+            <option value="43200">12 hours</option>
+            <option value="86400">24 hours</option>
+          </select></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="btn-pricing">Apply · POST /ops/pricing</button>
+      </div>
+      <div id="pricing-msg" style="margin-top:8px;min-height:18px"></div>
+      <div class="hint" style="margin-top:10px">
+        Automatic mode re-prices continuously from pool depth (available ÷ sellable) —
+        more idle capacity means a deeper discount, rising demand pulls it back.
+        Every change lands in the audit log.
+      </div>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="card">
+    <header><h2>Rate card</h2>
+      <span class="hint">on-demand base price per node type — spot price = base × (1 − effective discount) · running leases keep the rate snapshotted at admission</span></header>
+    <div class="scroll"><table id="rates-table"></table></div>
+    <div id="rates-msg" style="margin-top:8px;min-height:18px"></div>
+    <div class="row" style="align-items:flex-end;margin-top:8px;border-top:1px solid var(--grid);padding-top:12px">
+      <div class="field"><label>new node type</label>
+        <select id="n-name-select" style="width:140px"></select></div>
+      <div class="field" id="n-name-custom-field" style="display:none"><label>custom name</label>
+        <input id="n-name" placeholder="my.node" style="width:120px"></div>
+      <div class="field"><label>vcpu</label>
+        <input id="n-vcpu" type="number" value="16" min="1" max="128" style="width:64px"></div>
+      <div class="field"><label>ram (gb)</label>
+        <input id="n-ram" type="number" value="32" min="1" max="1024" style="width:72px"></div>
+      <div class="field"><label>hdd (gb)</label>
+        <input id="n-disk" type="number" value="400" min="0" max="10000" style="width:76px"></div>
+      <div class="field"><label>price ₹/h</label>
+        <input id="n-rate" type="number" value="9.60" min="0.01" step="0.01" style="width:84px"></div>
+      <div class="field"><label>spot</label>
+        <select id="n-eligible"><option value="true">eligible</option>
+          <option value="false">not eligible</option></select></div>
+      <button class="primary" id="btn-flavour">Add node type · POST /ops/flavours</button>
+    </div>
+  </div>
+  <div style="height:16px"></div>
+  <div class="card">
+    <header><h2>Billing</h2>
+      <span class="hint">rated usage — charges, credits and net, live since startup</span>
+      <span style="flex:1"></span>
+      <div class="field"><label for="bill-client">client</label>
+        <select id="bill-client"><option value="all">All clients</option></select></div></header>
+    <div class="grid" style="grid-template-columns:2fr 1fr;margin-bottom:12px" id="billing-tiles"></div>
+    <div class="scroll"><table id="billing-table"></table></div>
+  </div>
+</section>
+
+<!-- ================= page: leases ================= -->
+<section class="page" id="page-leases">
+  <div class="card" style="margin-bottom:16px">
+    <header><h2>Lease lifecycle</h2>
+      <span class="hint">live count in every state — click a stage to filter the table below</span></header>
+    <div class="pipe" id="pipeline"></div>
+  </div>
+  <div class="card">
+    <header><h2>Leases</h2><span class="hint" id="lease-count">—</span>
+      <span style="flex:1"></span>
+      <div class="field"><label for="lease-tenant">tenant</label>
+        <select id="lease-tenant"><option value="all">All tenants</option></select></div>
+      <div class="field"><label for="lease-state">state</label>
+        <select id="lease-state"><option value="all">All states</option><option value="live">Live only</option>
+          <option>REQUESTED</option><option>ADMITTED</option><option>PROVISIONING</option>
+          <option>RUNNING</option><option>NOTICE_ISSUED</option><option>DRAINING</option>
+          <option>STOPPED</option><option>CLOSED</option><option>REJECTED</option></select></div>
+    </header>
+    <div class="scroll tall"><table id="leases"></table></div>
+  </div>
+  <div style="height:16px"></div>
+  <div class="card">
+    <header><h2>Saved tasks</h2>
+      <span class="hint">stateful spot — on preemption the machine state (RAM, processes) is hibernated to storage; resume continues exactly where it stopped, at today's price</span></header>
+    <div class="scroll"><table id="saved-tasks"></table></div>
+    <div id="saved-msg" style="margin-top:8px;min-height:18px"></div>
+  </div>
+</section>
+
+<!-- ================= page: reclaim orders ================= -->
+<section class="page" id="page-reclaim">
+  <div class="card">
+    <header><h2>Reclaim orders</h2>
+      <span class="hint">inbound from the capacity side (edge 18) — each order shrinks the pool, selects victims and starts their grace timers</span></header>
+    <div class="scroll tall"><table id="orders"></table></div>
+  </div>
+</section>
+
+<!-- ================= page: controls ================= -->
+<section class="page" id="page-controls">
+  <div class="card">
+    <header><h2>Drive the system</h2>
+      <span class="hint">every button here is a real HTTP call — watch it appear in Activity &amp; audit</span></header>
+    <div class="grid split3">
+      <div>
+        <div class="hint" style="margin-bottom:8px"><b style="color:var(--s1)">1 · THE CUSTOMER</b> — asks for spot instances</div>
+        <div class="row" style="align-items:flex-end">
+          <div class="field"><label>tenant</label><select id="f-tenant"></select></div>
+          <div class="field"><label>flavour</label><select id="f-flavour">
+            <option>s1.small</option><option selected>s1.medium</option>
+            <option>s1.large</option><option>db1.xlarge</option></select></div>
+          <div class="field"><label>count</label><input id="f-count" type="number" value="1" min="1" max="16" style="width:64px"></div>
+          <div class="field"><label>az</label><select id="f-az"><option>az-1</option><option>az-2</option></select></div>
+          <div class="field"><label>guest</label><select id="f-drain">
+            <option value="60" selected>drains slowly · 60 s (watch the countdown)</option>
+            <option value="2">drains quickly · 2 s</option>
+            <option value="">ignores the notice · force-stop at 75 s</option></select></div>
+          <div class="field"><label>on preempt</label><select id="f-persist">
+            <option value="">destroy</option>
+            <option value="1">💾 save task</option></select></div>
+          <button class="primary" id="btn-launch">🚀 Launch · <span class="mono">POST /spot/leases</span></button>
+        </div>
+        <div id="launch-msg" style="margin-top:8px;min-height:18px"></div>
+      </div>
+      <div>
+        <div class="hint" style="margin-bottom:8px"><b style="color:var(--critical)">2 · THE CAPACITY SIDE</b> — takes it back when premium demand rises</div>
+        <div class="row" style="align-items:flex-end">
+          <div class="field"><label>az</label><select id="r-az"><option>az-1</option><option>az-2</option></select></div>
+          <div class="field"><label>units to reclaim</label><input id="r-units" type="number" value="4" min="1" style="width:80px"></div>
+          <button class="danger" id="btn-reclaim">⚡ Reclaim · <span class="mono">POST /internal/spot/reclaim</span></button>
+        </div>
+        <div class="row" style="align-items:flex-end;margin-top:10px">
+          <div class="field"><label>forecast headroom (az-1)</label><input id="h-units" type="number" value="60" min="0" style="width:90px"></div>
+          <button id="btn-headroom">📈 Raise headroom · <span class="mono">POST /sim/headroom</span></button>
+          <span class="hint">the proactive path: raise headroom above free capacity and the capacity side issues its own reclaim order</span>
+        </div>
+        <div id="reclaim-msg" style="margin-top:8px;min-height:18px"></div>
+      </div>
+      <div>
+        <div class="hint" style="margin-bottom:8px"><b style="color:var(--s3)">3 · THE LIFECYCLE</b> — release, or race the admission controller</div>
+        <div class="row" style="align-items:flex-end">
+          <div class="field" style="flex:1"><label>lease id</label>
+            <select id="f-lease" style="width:100%"></select></div>
+          <button id="btn-release">Release · <span class="mono">DELETE /spot/leases/{id}</span></button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="ghost" id="btn-burst">Burst: 6 concurrent launches</button>
+          <span class="hint">races the admission controller — some will get 409</span>
+        </div>
+        <div id="release-msg" style="margin-top:8px;min-height:18px"></div>
+      </div>
+    </div>
+  </div>
+  <div style="height:16px"></div>
+  <div class="card">
+    <header><h2>Guided demo</h2>
+      <span class="hint">one click runs the whole story against the live hypervisor: launch a persistent
+        instance → preempt it → watch it hibernate to storage → resume it where it stopped</span>
+      <span style="flex:1"></span>
+      <button class="primary" id="btn-demo">▶ Run guided demo · ~90 s</button></header>
+    <div class="log" id="demo-log" style="min-height:22px;line-height:1.9">
+      <span class="hint">press play — every step narrates what the system is doing and why</span></div>
+  </div>
+</section>
+
+<!-- ================= page: spot demand ================= -->
+<section class="page" id="page-demand">
+  <div class="card">
+    <header>
+      <h2>Demand for spot instances</h2>
+      <span class="hint" id="dem-hint">every availability check and launch attempt — including rejections — per node type</span>
+      <span style="flex:1"></span>
+      <button class="ghost drange" data-range="today">Today</button>
+      <button class="ghost drange active" data-range="week">Week</button>
+      <button class="ghost drange" data-range="month">Month</button>
+      <button class="ghost drange" data-range="year">Year</button>
+      <button class="ghost drange" data-range="custom">Custom</button>
+      <span class="row" id="dem-custom" style="display:none">
+        <input type="date" id="dem-start"><span class="hint">to</span>
+        <input type="date" id="dem-end">
+        <button id="dem-apply">Apply</button>
+      </span>
+    </header>
+    <div class="grid c4" id="dem-tiles" style="margin-bottom:16px"></div>
+    <div class="grid split">
+      <div>
+        <div class="hint" style="margin-bottom:6px">CHECKS OVER TIME <span id="dem-series-note"></span></div>
+        <div id="dem-series" style="min-height:170px"></div>
+      </div>
+      <div>
+        <div class="hint" style="margin-bottom:6px">BY NODE TYPE</div>
+        <div id="dem-bars"></div>
+      </div>
+    </div>
+    <div id="dem-msg" class="err" style="margin-top:6px;min-height:16px"></div>
+  </div>
+</section>
+
+<!-- ================= page: risk ================= -->
+<section class="page" id="page-risk">
+  <div class="grid split-lr">
+    <div class="card">
+      <header><h2>Overall platform risk</h2>
+        <span class="hint">weighted composite of the six factors on the right — recomputed every second from live state</span></header>
+      <div id="risk-overall"></div>
+    </div>
+    <div class="card">
+      <header><h2>Risk factors</h2><span class="hint">each scored 0–100 with the evidence behind it</span></header>
+      <div id="risk-factors"></div>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="grid split3">
+    <div class="card">
+      <header><h2>Preemption risk by AZ</h2>
+        <span class="hint">shallow pool = launches admitted now are likelier to be reclaimed</span></header>
+      <div class="scroll"><table id="risk-az"></table></div>
+    </div>
+    <div class="card">
+      <header><h2>Interruption risk by flavour</h2>
+        <span class="hint">what the inventory feed publishes back to customers (edge 30)</span></header>
+      <div class="scroll"><table id="risk-flavour"></table></div>
+    </div>
+    <div class="card">
+      <header><h2>Tenant exposure</h2>
+        <span class="hint" id="risk-tenant-hint">—</span></header>
+      <div class="scroll"><table id="risk-tenant"></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= page: logs ================= -->
+<section class="page" id="page-logs">
+  <div class="grid split">
+    <div class="card">
+      <header><h2>API calls</h2><span class="hint" id="lat">—</span>
+        <span style="flex:1"></span>
+        <select id="api-range" title="time window">
+          <option value="all">All time</option>
+          <option value="30">Last 30 sec</option>
+          <option value="300">Last 5 min</option>
+          <option value="3600">Last hour</option>
+          <option value="86400">Last 24 h</option>
+        </select>
+        <select id="api-format" title="view format">
+          <option value="table">Table</option>
+          <option value="json">JSON</option>
+        </select>
+        <button class="ghost" id="api-dl-json" style="font-size:12px;padding:4px 9px">⇩ JSON</button>
+        <button class="ghost" id="api-dl-csv" style="font-size:12px;padding:4px 9px">⇩ CSV</button>
+      </header>
+      <div class="scroll tall" id="api-log"></div>
+    </div>
+    <div class="card">
+      <header><h2>Audit log</h2><span class="hint" id="aud-count">append-only evidence</span>
+        <span style="flex:1"></span>
+        <select id="aud-range" title="time window">
+          <option value="all">All time</option>
+          <option value="30">Last 30 sec</option>
+          <option value="300">Last 5 min</option>
+          <option value="3600">Last hour</option>
+          <option value="86400">Last 24 h</option>
+          <option value="604800">This week</option>
+          <option value="2592000">This month</option>
+          <option value="31536000">This year</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <span class="row" id="aud-custom" style="display:none">
+          <input type="datetime-local" id="aud-start">
+          <input type="datetime-local" id="aud-end">
+        </span>
+        <select id="aud-format" title="view format">
+          <option value="table">Table</option>
+          <option value="json">JSON</option>
+        </select>
+        <button class="ghost" id="aud-dl-json" style="font-size:12px;padding:4px 9px">⇩ JSON</button>
+        <button class="ghost" id="aud-dl-csv" style="font-size:12px;padding:4px 9px">⇩ CSV</button>
+      </header>
+      <div class="scroll tall" id="audit"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Internal operations console · <b>build FINAL-DEMO</b> — if you cannot see this
+  build tag, press Ctrl+Shift+R. Dashboard traffic is excluded from the API log
+  so it does not drown out real calls.
+</footer>
+
+</main>
+</div>
+
+<div class="tooltip" id="tip"></div>
+<div id="toasts"></div>
+
+<div class="modal-overlay" id="modal" hidden>
+  <div class="modal">
+    <h3>Pause live updates?</h3>
+    <div class="sub" style="margin-bottom:16px">
+      The console will stop refreshing until you resume. Controls and API calls
+      keep working — only the display freezes.</div>
+    <div class="row" style="justify-content:flex-end">
+      <button class="ghost" id="modal-cancel">Keep it live</button>
+      <button class="primary" id="modal-confirm">Yes, pause</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   state
+   ===================================================================== */
+const S = {paused:false, overview:null, series:null, tsTable:false,
+           hgFilter:"all", leaseState:"all", leaseTenant:"all",
+           trend:null, trendRange:"month", trendTable:false, trendView:null,
+           trendShow:{premium:true, idle:true, predicted:true},
+           poolAz:null, auditFull:null, audRange:"all", audFormat:"table",
+           demand:null, demRange:"week", tickN:0, lastEvtTs:null,
+           apiRange:"all", apiFormat:"table",
+           host:null, leaseOpen:null};
+const SERIES = [
+  {key:"reserved_static",    label:"Reserved (static)",  css:"--s1"},
+  {key:"allocated_dynamic",  label:"Dynamic (pay-per-use)", css:"--s2"},
+  {key:"spot_allocated",     label:"Spot allocated",     css:"--s3"},
+  {key:"spot_reclaiming",    label:"Reclaiming",         css:"--s4"},
+  {key:"ops_buffer",         label:"Ops buffer (N+1)",   css:"--s5"},
+  {key:"free",               label:"Free",               css:"--free", neutral:true},
+];
+const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt  = (n,d=0) => n==null ? "—" : Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const clock = t => new Date(t*1000).toLocaleTimeString([], {hour12:false});
+const fmtDur = s => s==null ? "—"
+  : s < 90    ? `${Math.round(s)}s`
+  : s < 5400  ? `${Math.floor(s/60)}m ${Math.round(s%60)}s`
+  : s < 86400 ? `${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m`
+  :             `${Math.floor(s/86400)}d ${Math.floor(s%86400/3600)}h`;
+const esc = s => String(s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* =====================================================================
+   routing — sidebar pages
+   ===================================================================== */
+const PAGES = {
+  overview:  ["Dashboard", "System health at a glance — capacity, pool and the live event stream."],
+  capacity:  ["Cluster capacity", "Allocation over time, and per-host-group breakdown."],
+  trends:    ["Resource trends", "Allocation history and forecast — premium vs spot clients vs idle, with predicted capture."],
+  pool:      ["Spot pool", "The advertised read model per AZ: sellable, reserved, cooldown, confidence."],
+  inventory: ["Published inventory", "The customer-facing offer: availability, discount, rate, interruption history."],
+  pricing:   ["Pricing", "Discount policy — demand-driven curve, or a manual pin that expires on its own."],
+  leases:    ["Leases", "Every lease with state, placement, discount, billing and grace countdowns."],
+  reclaim:   ["Reclaim orders", "Capacity-side orders and what they preempted."],
+  demand:    ["Spot demand", "What customers looked for — availability checks and launch attempts per node type."],
+  controls:  ["Drive the system", "Fire real API calls against the running subsystem."],
+  risk:      ["Risk factors", "Composite platform risk — capacity pressure, pool depletion, preemption, feed health."],
+  logs:      ["Activity & audit", "API traffic with latency, and the append-only audit evidence."],
+};
+function route(){
+  const p = location.hash.replace(/^#\//,"") || "overview";
+  const page = PAGES[p] ? p : "overview";
+  document.querySelectorAll(".page").forEach(s=>s.classList.toggle("active", s.id==="page-"+page));
+  document.querySelectorAll("nav.nav a").forEach(a=>a.classList.toggle("active", a.dataset.page===page));
+  hideTip();
+  document.getElementById("page-title").textContent = PAGES[page][0];
+  document.getElementById("page-sub").textContent = PAGES[page][1];
+  if(S.overview) render();          // redraw so charts pick up real widths
+  if(page==="trends"){ S.trend ? renderTrends() : loadTrends(); }
+  if(page==="demand"){ S.demand ? renderDemand() : loadDemand(); }
+  if(page==="capacity") loadHost();
+}
+addEventListener("hashchange", route);
+
+/* =====================================================================
+   svg helpers
+   ===================================================================== */
+const NS="http://www.w3.org/2000/svg";
+function el(t,a={}){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function text(x,y,s,o={}){const t=el("text",{x,y,"font-size":o.fs||10.5,fill:o.fill||cssv("--muted"),
+  "text-anchor":o.anchor||"start","font-weight":o.w||400,"font-family":"system-ui,sans-serif"});
+  t.textContent=s;return t;}
+
+const tip = document.getElementById("tip");
+function showTip(x,y,html){tip.innerHTML=html;tip.style.opacity=1;
+  const r=tip.getBoundingClientRect();
+  tip.style.left = Math.min(x+14, innerWidth-r.width-10)+"px";
+  tip.style.top  = Math.min(y+14, innerHeight-r.height-10)+"px";}
+function hideTip(){tip.style.opacity=0;}
+// scrolling slides the chart out from under the cursor without a mouseleave,
+// which used to leave the tooltip frozen over unrelated content
+addEventListener("scroll", hideTip, {passive:true, capture:true});
+
+/* =====================================================================
+   header status bar — one compact readout of every panel on the site
+   ===================================================================== */
+const STAT_PRIMARY = [["capacity","Capacity"],["util","Utilisation"],["free","Free"],
+  ["spot","Spot in use"],["pool",""],["audit30","Audit · 30 min"]];
+const STAT_SECONDARY = [["leases","Live leases"],["preempting","Preempting"],
+  ["slo","Reclaim SLO"],["interruption","Interruption"],["pricing","Pricing"],
+  ["risk","Risk"],["reclaiming","Reclaiming"],["demand","Top demand"],
+  ["api","API"]];
+
+const STAT_NAV = {capacity:"#/capacity", util:"#/capacity", free:"#/capacity",
+  spot:"#/leases", pool:"#/pool", audit30:"#/logs", leases:"#/leases",
+  preempting:"#/leases", slo:"#/risk", interruption:"#/risk", pricing:"#/pricing",
+  risk:"#/risk", reclaiming:"#/reclaim", demand:"#/demand", orders:"#/reclaim",
+  billed:"#/leases", api:"#/logs"};
+function ensureStatbar(){
+  const bar = document.getElementById("statbar");
+  if(!bar || bar.dataset.built) return;
+  bar.dataset.built = "1";
+  const cell = ([k,l]) => `<div class="stat" id="stat-${k}" data-nav="${STAT_NAV[k]||""}"
+    title="click to open">
+    <div class="k" id="stk-${k}">${l}</div><div class="v" id="stv-${k}">—</div>
+    <div id="stx-${k}"></div></div>`;
+  bar.innerHTML =
+    `<div class="stat-row">${STAT_PRIMARY.map(cell).join("")}
+       <button class="ghost" id="stat-more-btn">More ▾</button></div>
+     <div class="stat-row" id="stat-secondary" hidden>${STAT_SECONDARY.map(cell).join("")}</div>`;
+  document.getElementById("stk-pool").innerHTML =
+    `Pool <select id="pool-az-sel" title="choose availability zone"></select>`;
+  document.getElementById("stat-more-btn").onclick = e=>{
+    const sec = document.getElementById("stat-secondary");
+    sec.hidden = !sec.hidden;
+    e.target.textContent = sec.hidden? "More ▾" : "Less ▴";
+    try{ localStorage.setItem("spot-statmore", sec.hidden?"":"1"); }catch(_){}
+  };
+  try{ if(localStorage.getItem("spot-statmore")==="1")
+    document.getElementById("stat-more-btn").click(); }catch(_){}
+  bar.addEventListener("click", ev=>{
+    if(ev.target.closest("select,button")) return;   // the pool dropdown etc.
+    const nav = ev.target.closest("[data-nav]")?.dataset.nav;
+    if(nav) location.hash = nav;
+  });
+}
+
+function renderStatbar(o){
+  if(!document.getElementById("statbar")) return;   // strip removed from UI
+  ensureStatbar();
+  const c = o.cluster, slo = o.slo, m = o.metrics;
+  const live = (o.states.RUNNING||0)+(o.states.NOTICE_ISSUED||0)+(o.states.DRAINING||0);
+  const irows = o.interruption.by_flavour_az;
+  const nLeases = irows.reduce((a,r)=>a+r.leases,0);
+  const nIntr   = irows.reduce((a,r)=>a+r.interrupted,0);
+  const preempting = o.leases.filter(l=>l.grace_remaining!=null).length;
+  const set = (k,v,cls="")=>{
+    document.getElementById("stv-"+k).innerHTML = v;
+    const el = document.getElementById("stat-"+k);
+    el.className = "stat"+(cls?" "+cls:"");   // data-nav lives in attributes, untouched
+  };
+
+  set("util", `${c.utilisation_pct}<small>%</small>`,
+      c.utilisation_pct>=90?"bad":c.utilisation_pct>=75?"warn":"");
+  const sellSum = o.pools.reduce((a,p)=>a+p.sellable_units,0);
+  set("free", `${fmt(c.free)}<small> vCPU · ${fmt(sellSum)} sellable</small>`);
+  set("spot", `${fmt(c.spot_allocated)}<small> vCPU · ${c.spot_share_pct}%</small>`);
+  set("leases", `${live}<small> · ${o.states.CLOSED||0} closed</small>`);
+  set("preempting", `${preempting}`, preempting>0?"bad":"");
+  set("slo", slo.attainment==null?"—":`${(slo.attainment*100).toFixed(0)}<small>%</small>`,
+      slo.attainment==null?"":(slo.attainment>=1?"good":"warn"));
+  if(o.pricing) set("pricing", o.pricing.override
+    ? `${(o.pricing.override.discount*100).toFixed(0)}<small>% pinned · ${fmtDur(o.pricing.override.remaining_seconds)} left</small>`
+    : `auto<small> · demand-driven</small>`, o.pricing.override?"warn":"");
+  const r = riskModel(o); const [lvl] = riskLevel(r.overall);
+  set("risk", `${r.overall}<small> · ${lvl}</small>`,
+      r.overall>=75?"bad":r.overall>=50?"warn":r.overall<25?"good":"");
+
+  // pool: one stat, AZ chosen from the dropdown (options rebuilt only on change)
+  const ps = document.getElementById("pool-az-sel");
+  if(ps.options.length !== o.pools.length){
+    ps.innerHTML = o.pools.map(p=>`<option value="${p.az}">${p.az}</option>`).join("");
+    ps.value = S.poolAz || o.pools[0]?.az;
+    ps.onchange = ()=>{ S.poolAz = ps.value; renderStatbar(S.overview); };
+  }
+  const p = o.pools.find(x=>x.az===(S.poolAz||ps.value)) || o.pools[0];
+  if(p){
+    const pct = p.sellable_units? Math.round(100*p.available_units/p.sellable_units) : 0;
+    set("pool", `${p.available_units}<small>/${p.sellable_units} · ${pct}% unallocated</small>`,
+        p.degraded?"bad":(p.available_units===0?"warn":""));
+  }
+
+  set("capacity", `${fmt(c.total)}<small> vCPU</small>`);
+  document.getElementById("stx-capacity").innerHTML =
+    `<div class="microbar">${SERIES.filter(s=>!s.neutral).map(s=>
+      `<i style="width:${100*(c[s.key]||0)/c.total}%;background:${cssv(s.css)}"></i>`).join("")}</div>`;
+
+  const nowTs = o.now || Date.now()/1000;
+  const a30 = (S.auditFull || o.audit).filter(a=> a.ts >= nowTs-1800).length;
+  set("audit30", `${a30}<small> entr${a30===1?"y":"ies"}</small>`);
+
+  set("reclaiming", `${fmt(c.spot_reclaiming)}<small> vCPU</small>`, c.spot_reclaiming>0?"warn":"");
+  set("interruption", `${nLeases?(100*nIntr/nLeases).toFixed(0):0}<small>%</small>`);
+  set("demand", o.demand_top
+    ? `${esc(o.demand_top.flavour)}<small> · ${o.demand_top.checks} check${o.demand_top.checks===1?"":"s"} 24h</small>` : "—");
+  set("api", `${m.counters["http.total"]||0}<small> calls · p99 ${m.http_p99_ms??"—"}ms</small>`);
+}
+
+/* =====================================================================
+   chart 1 — stacked area, capacity over time
+   ===================================================================== */
+function drawArea(host, samples){
+  host.innerHTML="";
+  if(!samples || samples.length<2){ host.innerHTML='<div class="hint" style="padding:40px 0;text-align:center">collecting samples…</div>'; return; }
+  const W = host.clientWidth || 900, H = 260;
+  const M = {t:10,r:14,b:22,l:44};
+  const iw = W-M.l-M.r, ih = H-M.t-M.b;
+  const svg = el("svg",{width:"100%",height:H,viewBox:`0 0 ${W} ${H}`,role:"img",
+                        "aria-label":"Cluster capacity over time, stacked by allocation class"});
+
+  const total = Math.max(...samples.map(s=>s.cluster.total));
+  const x = i => M.l + (iw * i / (samples.length-1));
+  const y = v => M.t + ih - (ih * v / total);
+
+  // gridlines + y axis
+  const ticks = 4;
+  for(let k=0;k<=ticks;k++){
+    const v = total*k/ticks, yy = y(v);
+    svg.appendChild(el("line",{x1:M.l,y1:yy,x2:W-M.r,y2:yy,stroke:cssv("--grid"),"stroke-width":1}));
+    svg.appendChild(text(M.l-8, yy+3.5, fmt(v), {anchor:"end"}));
+  }
+  svg.appendChild(text(M.l-8, M.t-1, "vCPU", {anchor:"end", fs:9.5}));
+
+  // stacked areas, bottom-up, with a 2px surface gap between fills
+  let base = new Array(samples.length).fill(0);
+  SERIES.forEach(s=>{
+    const top = samples.map((smp,i)=> base[i] + (smp.cluster[s.key]||0));
+    let d = `M${x(0)},${y(base[0])}`;
+    for(let i=0;i<samples.length;i++) d += ` L${x(i)},${y(top[i])}`;
+    for(let i=samples.length-1;i>=0;i--) d += ` L${x(i)},${y(base[i])}`;
+    d += " Z";
+    svg.appendChild(el("path",{d,fill:cssv(s.css),opacity:s.neutral?1:.92}));
+    // 2px surface separator on the upper boundary
+    let l = `M${x(0)},${y(top[0])}`;
+    for(let i=1;i<samples.length;i++) l += ` L${x(i)},${y(top[i])}`;
+    svg.appendChild(el("path",{d:l,fill:"none",stroke:cssv("--surface"),"stroke-width":2}));
+    base = top;
+  });
+
+  // x axis
+  svg.appendChild(el("line",{x1:M.l,y1:M.t+ih,x2:W-M.r,y2:M.t+ih,stroke:cssv("--axis"),"stroke-width":1}));
+  [0, Math.floor((samples.length-1)/2), samples.length-1].forEach(i=>{
+    svg.appendChild(text(x(i), H-6, clock(samples[i].ts), {anchor: i===0?"start":(i===samples.length-1?"end":"middle")}));
+  });
+
+  // crosshair + tooltip
+  const cross = el("line",{x1:0,y1:M.t,x2:0,y2:M.t+ih,stroke:cssv("--axis"),"stroke-width":1,
+                           "stroke-dasharray":"3 3",opacity:0});
+  svg.appendChild(cross);
+  const hit = el("rect",{x:M.l,y:M.t,width:iw,height:ih,fill:"transparent"});
+  svg.appendChild(hit);
+  hit.addEventListener("mousemove", ev=>{
+    const bb = svg.getBoundingClientRect();
+    const px = (ev.clientX-bb.left) * (W/bb.width);
+    const i = Math.max(0, Math.min(samples.length-1, Math.round((px-M.l)/iw*(samples.length-1))));
+    cross.setAttribute("x1",x(i)); cross.setAttribute("x2",x(i)); cross.setAttribute("opacity",1);
+    const c = samples[i].cluster;
+    const rows = SERIES.map(s=>`<tr><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;
+      background:${cssv(s.css)};margin-right:6px"></span>${s.label}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(c[s.key])}</td></tr>`).join("");
+    showTip(ev.clientX, ev.clientY,
+      `<b>${clock(samples[i].ts)}</b> · ${c.utilisation_pct}% utilised<table>${rows}</table>`);
+  });
+  hit.addEventListener("mouseleave", ()=>{cross.setAttribute("opacity",0); hideTip();});
+  host.appendChild(svg);
+}
+
+function drawAreaTable(host, samples){
+  const rows = samples.slice(-40).reverse().map(s=>`<tr><td class="mono">${clock(s.ts)}</td>`+
+    SERIES.map(x=>`<td class="num">${fmt(s.cluster[x.key])}</td>`).join("")+
+    `<td class="num">${s.cluster.utilisation_pct}%</td></tr>`).join("");
+  host.innerHTML = `<table><thead><tr><th>time</th>`+
+    SERIES.map(x=>`<th class="num">${x.label}</th>`).join("")+
+    `<th class="num">util</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* =====================================================================
+   chart 2 — horizontal stacked bars per host group (filterable)
+   ===================================================================== */
+function drawHostGroups(host, hgs){
+  host.innerHTML="";
+  const W = host.clientWidth || 460;
+  const rowH = 46, H = hgs.length*rowH + 16;
+  const svg = el("svg",{width:"100%",height:H,viewBox:`0 0 ${W} ${H}`,role:"img",
+                        "aria-label":"Capacity by host group"});
+  const max = Math.max(...hgs.map(h=>h.total));
+  hgs.forEach((h,idx)=>{
+    const y0 = idx*rowH + 4;
+    svg.appendChild(text(0, y0+11, `${h.host_group}`, {fs:12, w:600, fill:cssv("--ink")}));
+    svg.appendChild(text(0, y0+24, `${h.az} · ${h.total} vCPU · ${Math.round(100*(h.total-h.free)/h.total)}% used`,
+                         {fs:10.5}));
+    const bw = W, bh = 12, by = y0+30;
+    let cx = 0;
+    SERIES.forEach(s=>{
+      const v = h[s.key]||0; if(!v) return;
+      const w = Math.max(1, bw * v / max);
+      svg.appendChild(el("rect",{x:cx,y:by,width:Math.max(0,w-2),height:bh,rx:3,
+        fill:cssv(s.css),opacity:s.neutral?1:.92}));
+      const r = el("rect",{x:cx,y:by-3,width:Math.max(1,w),height:bh+6,fill:"transparent"});
+      r.addEventListener("mousemove",ev=>showTip(ev.clientX,ev.clientY,
+        `<b>${h.host_group}</b><br>${s.label}: <b>${v}</b> vCPU (${Math.round(100*v/h.total)}%)`));
+      r.addEventListener("mouseleave",hideTip);
+      svg.appendChild(r);
+      if(w>34) svg.appendChild(text(cx+w/2-1, by+9, String(v),
+        {anchor:"middle", fs:9.6, w:700, fill: s.neutral?cssv("--muted"):"#fff"}));
+      cx += w;
+    });
+  });
+  host.appendChild(svg);
+}
+
+function renderHostGroupTable(hgs){
+  const rows = hgs.map(h=>`<tr>
+    <td class="mono"><b>${h.host_group}</b></td><td class="mono">${h.az}</td>
+    <td class="num">${h.total}</td>
+    <td class="num">${h.reserved_static}</td>
+    <td class="num">${h.allocated_dynamic}</td>
+    <td class="num">${h.spot_allocated}</td>
+    <td class="num">${h.spot_reclaiming}</td>
+    <td class="num">${h.ops_buffer}</td>
+    <td class="num">${h.free}</td>
+    <td class="num">${Math.round(100*(h.total-h.free)/h.total)}%</td></tr>`).join("");
+  document.getElementById("hg-table").innerHTML =
+    `<thead><tr><th>host group</th><th>az</th><th class="num">total</th>
+     <th class="num">reserved</th><th class="num">dynamic</th><th class="num">spot</th>
+     <th class="num">reclaiming</th><th class="num">buffer</th><th class="num">free</th>
+     <th class="num">used</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+function legend(host, series){
+  host.innerHTML = series.map(s=>
+    `<span><i style="background:${cssv(s.css)}"></i>${s.label}</span>`).join("");
+}
+
+function renderBilling(o){
+  const b = o.billing_summary; if(!b || !document.getElementById("billing-tiles")) return;
+  // client filter (options rebuilt only when the tenant set changes)
+  const bf = document.getElementById("bill-client");
+  if(bf.options.length !== b.tenants.length + 1){
+    const cur = bf.value;
+    bf.innerHTML = '<option value="all">All clients</option>' +
+      b.tenants.map(t=>`<option value="${esc(t.tenant_id)}">${esc(t.tenant_id.replace("tenant-",""))}</option>`).join("");
+    bf.value = [...bf.options].some(op=>op.value===cur) ? cur : "all";
+  }
+  const rows = bf.value==="all" ? b.tenants
+             : b.tenants.filter(t=>t.tenant_id===bf.value);
+  const net = rows.reduce((a,t)=>a+t.net,0);
+  const charged = rows.reduce((a,t)=>a+t.charged,0);
+  const credited = rows.reduce((a,t)=>a+t.credited,0);
+  const scope = bf.value==="all" ? "all clients" : bf.value.replace("tenant-","");
+  const tile = (l,v,f)=>`<div class="card tile"><div class="label">${l}</div>
+    <div class="value">${v}</div><div class="foot">${f}</div></div>`;
+  document.getElementById("billing-tiles").innerHTML =
+    tile(`Billed (net) — ${scope}`, "₹"+net.toFixed(4),
+         `charged ₹${charged.toFixed(4)} · credited ₹${credited.toFixed(4)}`) +
+    tile("Clients billed", String(rows.length),
+         rows.reduce((a,t)=>a+t.charges,0)+" usage records in scope");
+  document.getElementById("billing-table").innerHTML =
+    `<thead><tr><th>client</th><th class="num">charges</th><th class="num">charged</th>
+     <th class="num">credits</th><th class="num">credited</th><th class="num">net</th>
+     <th>invoice</th></tr></thead><tbody>` +
+    (rows.map(t=>`<tr>
+      <td><b>${esc(t.tenant_id.replace("tenant-",""))}</b></td>
+      <td class="num">${t.charges}</td><td class="num">₹${t.charged.toFixed(6)}</td>
+      <td class="num">${t.credits}</td><td class="num">₹${t.credited.toFixed(6)}</td>
+      <td class="num"><b>₹${t.net.toFixed(6)}</b></td>
+      <td><a href="/ops/billing/${esc(t.tenant_id)}" target="_blank">full invoice ↗</a></td></tr>`).join("")
+     || '<tr><td colspan="7" class="hint">no rated usage yet — close a lease to see a bill</td></tr>') +
+    "</tbody></table>";
+}
+
+/* =====================================================================
+   lifecycle pipeline · preemption banner · event toasts
+   ===================================================================== */
+const PIPE_STAGES = [
+  ["REQUESTED","--muted"],["ADMITTED","--s1"],["PROVISIONING","--s1"],
+  ["RUNNING","--good"],["NOTICE_ISSUED","--warning"],["DRAINING","--warning"],
+  ["STOPPED","--serious"],["CLOSED","--muted"]];
+function renderPipeline(o){
+  const host = document.getElementById("pipeline"); if(!host) return;
+  const cell = (label, n, colvar) =>
+    `<div class="stage ${n>0?"hot":""}" style="color:${cssv(colvar)}">
+       <div class="n">${n}</div><div class="l">${label.replace("_"," ")}</div></div>`;
+  const cellNav = (label, n, colvar, state) =>
+    cell(label, n, colvar).replace('<div class="stage',
+      `<div title="click → leases filtered to ${state}" data-pstate="${state}" class="stage`);
+  host.innerHTML =
+    PIPE_STAGES.map(([k,c]) => cellNav(k, o.states[k]||0, c, k))
+      .join('<span class="arrow">→</span>') +
+    `<span class="arrow" style="margin-left:6px">↘</span>` +
+    cellNav("💾 saved", (o.saved_tasks||[]).length, "--s1", "SAVED") +
+    `<span class="arrow">·</span>` +
+    cellNav("rejected", o.states.REJECTED||0, "--critical", "REJECTED");
+}
+document.getElementById("pipeline")?.addEventListener("click", ev=>{
+  const st = ev.target.closest("[data-pstate]")?.dataset.pstate;
+  if(!st) return;
+  if(st!=="SAVED"){
+    S.leaseState = st;
+    const sel = document.getElementById("lease-state");
+    if([...sel.options].some(op=>op.value===st)) sel.value = st;
+  }
+  location.hash = "#/leases";
+});
+
+function renderBanner(o){
+  const b = document.getElementById("preempt-banner");
+  const hot = o.leases.filter(l=>l.grace_remaining!=null);
+  if(!hot.length){ b.style.display="none"; return; }
+  const l = hot[0];
+  b.style.display = "block";
+  b.innerHTML = `⚡ PREEMPTION IN PROGRESS — lease ${l.lease_id.slice(6,16)}
+    (${esc(l.flavour)}, ${l.tenant_id.replace("tenant-","")}) · force-stop in
+    <b>${l.grace_remaining}s</b>${l.persist?" · 💾 will hibernate to storage":""}
+    ${hot.length>1?` · +${hot.length-1} more`:""}`;
+}
+
+function showToasts(o){
+  const evs = (o.events||[]).filter(e=>e.topic!=="spot.pool.updated");
+  if(S.lastEvtTs === null){                  // first tick: don't replay history
+    S.lastEvtTs = Math.max(0, ...evs.map(e=>e.ts));
+    return;
+  }
+  const fresh = evs.filter(e=>e.ts > S.lastEvtTs).slice(-3);
+  if(fresh.length) S.lastEvtTs = Math.max(...fresh.map(e=>e.ts));
+  const box = document.getElementById("toasts");
+  fresh.forEach(e=>{
+    const cls = e.topic.includes("preempt")? "crit"
+      : e.topic.includes("reclaim")||e.topic.includes("capacity")? "warn"
+      : e.topic.includes("usage")||e.topic.includes("credit")? ""
+      : "good";
+    const d = document.createElement("div");
+    d.className = "toast "+cls;
+    d.innerHTML = `<div class="t-top">${esc(e.topic)}</div>
+      <div class="t-sub">${esc(JSON.stringify(e.payload)).slice(0,90)}</div>`;
+    box.appendChild(d);
+    setTimeout(()=>d.remove(), 6000);
+  });
+}
+
+/* =====================================================================
+   physical host — real telemetry from the hypervisor
+   ===================================================================== */
+async function loadHost(){
+  try{
+    const d = await fetch("/ops/host").then(r=>r.json());
+    S.host = d;
+    renderHost();
+  }catch(_){}
+}
+function renderHost(){
+  const d = S.host, card = document.getElementById("host-card");
+  if(!d || !d.live){ card.hidden = true; return; }
+  card.hidden = false;
+  document.getElementById("host-sub").textContent =
+    `${d.node} · ${d.cpu_model.replace(/\(R\)|\(TM\)/g,"")} · PVE ${d.pve_version.split("/")[1]||""} · refreshed every 5 s`;
+  const gauge = (label, value, unit, pct, colvar) => `
+    <div class="card tile"><div class="label">${label}</div>
+      <div class="value">${value}<span class="unit">${unit}</span></div>
+      ${pct!=null?`<div class="meter"><i style="width:${Math.min(100,pct)}%;background:${cssv(colvar)}"></i></div>`:""}
+    </div>`;
+  document.getElementById("host-gauges").innerHTML =
+    gauge("CPU right now", d.cpu_pct, `% of ${d.cores} cores`, d.cpu_pct,
+          d.cpu_pct>85?"--critical":d.cpu_pct>60?"--s4":"--s3") +
+    gauge("Memory", `${d.mem_used_gb}`, ` / ${d.mem_total_gb} GB`,
+          100*d.mem_used_gb/d.mem_total_gb,
+          d.mem_used_gb/d.mem_total_gb>.85?"--critical":"--s1") +
+    gauge("Load average", (d.loadavg||[])[0] ?? "—", ` · ${(d.loadavg||[]).slice(1).join(" · ")}`, null) +
+    gauge("Host uptime", fmtDur(d.uptime), "", null);
+  const chip = (txt,c)=>`<span class="chip"><i style="background:${cssv(c)}"></i>${txt}</span>`;
+  document.getElementById("host-guests").innerHTML =
+    `<thead><tr><th>vmid</th><th>name</th><th>role</th><th>status</th>
+     <th class="num">cores</th><th class="num">mem</th><th class="num">uptime</th></tr></thead><tbody>` +
+    d.guests.map(g=>`<tr${g.spot?' style="background:var(--accent-soft)"':""}>
+      <td class="mono">${g.vmid}</td>
+      <td class="mono"><b>${esc(g.name)}</b></td>
+      <td>${g.template? chip("template","--muted")
+          : g.spot? chip("⚡ spot instance","--s1")
+          : chip("premium client","--s2")}</td>
+      <td>${chip(g.status, g.status==="running"?"--good":"--muted")}</td>
+      <td class="num">${g.cores}</td>
+      <td class="num">${g.mem_mb>=1024? (g.mem_mb/1024).toFixed(1)+" GB" : g.mem_mb+" MB"}</td>
+      <td class="num">${g.uptime? fmtDur(g.uptime):"—"}</td></tr>`).join("") + "</tbody>";
+}
+
+/* =====================================================================
+   guided demo — the whole stateful-spot story, narrated
+   ===================================================================== */
+function waitUntil(fn, secs){
+  return new Promise(async (res, rej)=>{
+    const t0 = Date.now();
+    while(Date.now()-t0 < secs*1000){
+      try{ if(await fn()) return res(); }catch(_){}
+      await new Promise(r=>setTimeout(r, 1500));
+    }
+    rej(new Error("timed out after "+secs+"s"));
+  });
+}
+async function runGuidedDemo(){
+  const host = document.getElementById("demo-log");
+  const btn = document.getElementById("btn-demo");
+  host.innerHTML = ""; btn.disabled = true; btn.textContent = "running…";
+  const say = (m, colvar)=>{
+    const d = document.createElement("div");
+    d.innerHTML = m; if(colvar) d.style.color = cssv(colvar);
+    host.appendChild(d);
+  };
+  const T = "tenant-spot-a";
+  try{
+    say("1/5 ⏳ launching s1.small with 💾 save-on-preempt…");
+    const r = await call("POST","/spot/leases",
+      {flavour:"s1.small", count:1, az:"az-1", drain_seconds:2, persist:true},
+      {"X-Tenant-Id":T, "Idempotency-Key":"demo-"+Math.random().toString(36).slice(2,10)});
+    if(r.status!==201) throw new Error(`launch got ${r.status} — ${esc(JSON.stringify(r.data?.error||r.data?.detail||""))}. Free some capacity — release a lease, or wait for the raised forecast headroom to auto-revert — then try again.`);
+    const lease = r.data.lease_id;
+    say(`1/5 ✓ lease ${lease} admitted at ${(r.data.discount_snapshot*100).toFixed(0)}% off — a real VM is being cloned`,"--good-text");
+    say("2/5 ⏳ waiting for the VM to boot on the hypervisor…");
+    await waitUntil(async()=>
+      (await fetch("/spot/leases/"+lease).then(x=>x.json())).state==="RUNNING", 90);
+    say("2/5 ✓ VM RUNNING — open Proxmox and it is there","--good-text");
+    say("3/5 ⏳ capacity side wants it back — firing a reclaim…");
+    await call("POST","/internal/spot/reclaim",{units:2, az:"az-1", reason:"guided demo"});
+    say("3/5 ✓ preemption notice delivered — watch the red banner and the grace countdown","--good-text");
+    say("4/5 ⏳ guest hibernating: RAM + running processes → storage…");
+    let saved = null;
+    await waitUntil(async()=>{
+      const t = await fetch("/spot/saved",{headers:{"X-Tenant-Id":T}}).then(x=>x.json());
+      saved = t.find(x=>x.from_lease===lease);
+      return !!saved;
+    }, 120);
+    say(`4/5 ✓ task SAVED (machine ${saved.vmids.join(", ")}) — capacity freed, work preserved. This is the moment spot stops being scary.`,"--good-text");
+    say("5/5 ⏳ capacity is back — resuming the task…");
+    const rr = await call("POST",`/spot/saved/${saved.saved_id}/resume`,null,{"X-Tenant-Id":T});
+    if(rr.status!==201) throw new Error("resume got "+rr.status);
+    say(`5/5 ✓ RESUMED as ${rr.data.lease_id} — the same machine continues exactly where it stopped`,"--good-text");
+    say("🎉 demo complete — Leases, Saved tasks and the audit log hold the evidence","--s1");
+  }catch(e){
+    say("✗ "+esc(e.message), "--critical");
+  }
+  btn.disabled = false; btn.textContent = "▶ Run guided demo · ~90 s";
+  tick();
+}
+
+/* =====================================================================
+   tiles
+   ===================================================================== */
+function stateChip(state){
+  const map = {RUNNING:["--good","running"],NOTICE_ISSUED:["--warning","notice"],
+    DRAINING:["--warning","draining"],STOPPED:["--serious","stopped"],
+    CLOSED:["--muted","closed"],REJECTED:["--critical","rejected"],
+    ADMITTED:["--s1","admitted"],PROVISIONING:["--s1","provisioning"],REQUESTED:["--muted","requested"]};
+  const [c] = map[state] || ["--muted"];
+  return `<span class="chip"><i style="background:${cssv(c)}"></i>${state}</span>`;
+}
+
+function renderTiles(o){
+  const c = o.cluster, slo = o.slo;
+  const live = (o.states.RUNNING||0)+(o.states.NOTICE_ISSUED||0)+(o.states.DRAINING||0);
+  const irows = o.interruption.by_flavour_az;
+  const leases = irows.reduce((a,r)=>a+r.leases,0), intr = irows.reduce((a,r)=>a+r.interrupted,0);
+  const seg = SERIES.filter(s=>!s.neutral).map(s=>
+    `<i style="width:${100*(c[s.key]||0)/c.total}%;background:${cssv(s.css)}"></i>`).join("");
+  const t = [
+    ["Total capacity", fmt(c.total), "vCPU", `${o.host_groups.length} host groups · ${o.pools.length} AZs`, seg],
+    ["Utilisation", c.utilisation_pct, "%", `${fmt(c.total-c.free)} of ${fmt(c.total)} vCPU committed`, seg],
+    ["Sellable", fmt(o.pools.reduce((a,p)=>a+p.sellable_units,0)), "vCPU",
+     `${fmt(c.free)} free − forecast headroom = what the pool advertises`, ""],
+    ["Spot in use", fmt(c.spot_allocated+c.spot_reclaiming), "vCPU",
+      `${c.spot_share_pct}% of the fleet · ${fmt(c.spot_reclaiming)} reclaiming`, ""],
+    ["Live leases", live, "", `${o.states.CLOSED||0} closed · ${o.states.REJECTED||0} rejected`, ""],
+    ["Reclaim SLO", slo.attainment==null?"—":(slo.attainment*100).toFixed(1), slo.attainment==null?"":"%",
+      slo.measured? `${slo.within_budget}/${slo.measured} inside ${o.config.grace_seconds}s` : "no reclaims yet", ""],
+    ["Interruption rate", leases? (100*intr/leases).toFixed(0):"0", "%",
+      `${intr} of ${leases} leases preempted`, ""],
+  ];
+  document.getElementById("tiles").innerHTML = t.map(([l,v,u,f,bar])=>
+    `<div class="card tile"><div class="label">${l}</div>
+     <div class="value">${v}<span class="unit">${u}</span></div>
+     <div class="foot">${f}</div>${bar?`<div class="meter">${bar}</div>`:""}</div>`).join("");
+}
+
+/* =====================================================================
+   panels
+   ===================================================================== */
+function poolBlock(p, headroom){
+  const hr = (headroom||{})[p.az];
+  const w = v => `${100*v/Math.max(1,p.sellable_units)}%`;
+  return `<div style="margin-bottom:12px">
+    <div class="row" style="justify-content:space-between">
+      <div><b>${p.az}</b> <span class="hint">confidence ${p.confidence} · ${fmtDur(p.age_seconds)} old
+        ${p.degraded?'<span class="chip" style="margin-left:6px"><i style="background:'+cssv("--critical")+'"></i>DEGRADED</span>':""}</span></div>
+      <div class="mono">${p.available_units} available / ${p.sellable_units} sellable</div>
+    </div>
+    <div class="bar-mini" style="margin-top:6px;height:9px">
+      <i style="width:${w(p.reserved_units)};background:${cssv("--s3")}"></i>
+      <i style="width:${w(p.cooldown_units)};background:${cssv("--s4")}"></i>
+    </div>
+    <div class="hint" style="margin-top:3px">reserved ${p.reserved_units} · cooldown ${p.cooldown_units} · free to sell ${p.available_units}${
+      hr!=null? ` · forecast holds back <b>${hr}</b> vCPU` : ""}${
+      p.available_units===0 && hr>0
+        ? ` <span style="color:${cssv("--serious")};font-weight:600">— headroom is blocking new sales (auto-reverts)</span>` : ""}</div>
+  </div>`;
+}
+function renderPools(o){
+  const html = o.pools.map(p=>poolBlock(p, o.headroom)).join("");
+  const a = document.getElementById("pools");      if(a) a.innerHTML = html;
+  const b = document.getElementById("pools-full"); if(b) b.innerHTML = html;
+}
+
+function renderPricing(o){
+  const pr = o.pricing; if(!pr) return;
+  const ov = pr.override;
+
+  // mode banner
+  document.getElementById("pricing-status").innerHTML = ov
+    ? `<div class="row"><span class="chip"><i style="background:${cssv("--warning")}"></i>MANUAL</span>
+       <b>${(ov.discount*100).toFixed(0)}% off</b> <span class="hint">· scope ${ov.az||"all AZs"}</span>
+       <span class="hint">· reverts to automatic in</span>
+       <b style="color:${cssv("--serious")}">${fmtDur(ov.remaining_seconds)}</b></div>`
+    : `<div class="row"><span class="chip"><i style="background:${cssv("--good")}"></i>AUTOMATIC</span>
+       <span class="hint">discount follows pool depth — more idle capacity, deeper discount</span></div>`;
+
+  // per-AZ table
+  const poolBy = Object.fromEntries(o.pools.map(p=>[p.az,p]));
+  const rows = pr.per_az.map(r=>{
+    const p = poolBy[r.az]||{};
+    return `<tr>
+      <td class="mono">${r.az}</td>
+      <td class="num">${p.available_units??"—"} / ${p.sellable_units??"—"}</td>
+      <td class="num">${(r.auto_discount*100).toFixed(0)}%</td>
+      <td class="num"><b>${(r.effective_discount*100).toFixed(0)}%</b></td>
+      <td>${r.overridden
+        ? `<span class="chip"><i style="background:${cssv("--warning")}"></i>override</span>`
+        : `<span class="chip"><i style="background:${cssv("--good")}"></i>curve</span>`}</td></tr>`;
+  }).join("");
+  document.getElementById("pricing-table").innerHTML =
+    `<thead><tr><th>az</th><th class="num">pool depth</th><th class="num">curve says</th>
+     <th class="num">effective</th><th>source</th></tr></thead><tbody>${rows}</tbody>`;
+
+  document.getElementById("pricing-curve").textContent =
+    `automatic curve: ${(pr.min_discount*100).toFixed(0)}% at an empty pool → `+
+    `${(pr.max_discount*100).toFixed(0)}% at full depth`;
+
+  // sidebar badge
+  const badge = document.getElementById("nav-pricing");
+  badge.textContent = ov ? "manual" : "auto";
+  badge.style.color = ov ? cssv("--serious") : "";
+
+  // AZ scope options (stable)
+  const pa = document.getElementById("p-az");
+  if(pa.options.length !== o.pools.length+1){
+    const cur = pa.value;
+    pa.innerHTML = '<option value="">All AZs</option>'+
+      o.pools.map(p=>`<option value="${p.az}">${p.az}</option>`).join("");
+    pa.value = [...pa.options].some(op=>op.value===cur) ? cur : "";
+  }
+}
+
+/* standard node-type catalogue for the "new node type" dropdown.
+   suffix sets the size; family scales RAM and price (m1 = memory-optimised,
+   c1 = compute-optimised, db1 = licence-bound, never spot). */
+const NODE_SIZES = {
+  small:  {vcpu:2,  ram:4,  disk:50,  rate:1.20},
+  medium: {vcpu:4,  ram:8,  disk:100, rate:2.40},
+  large:  {vcpu:8,  ram:16, disk:200, rate:4.80},
+  xlarge: {vcpu:16, ram:32, disk:400, rate:9.60},
+  "2xlarge":{vcpu:32, ram:64, disk:800, rate:19.20},
+};
+const NODE_FAMILIES = {
+  s1:  {ram:1, rate:1,    eligible:true},
+  m1:  {ram:2, rate:1.5,  eligible:true},
+  c1:  {ram:.5, rate:1.15, eligible:true},
+  db1: {ram:4, rate:3,    eligible:false},
+};
+const NODE_PRESETS = Object.keys(NODE_FAMILIES).flatMap(fam =>
+  Object.keys(NODE_SIZES).map(size => `${fam}.${size}`));
+
+function presetSpecs(name){
+  const [fam, size] = name.split(".");
+  const f = NODE_FAMILIES[fam], s = NODE_SIZES[size];
+  if(!f || !s) return null;
+  return {vcpu:s.vcpu, ram:Math.max(1,Math.round(s.ram*f.ram)), disk:s.disk,
+          rate:+(s.rate*f.rate).toFixed(2), eligible:f.eligible};
+}
+
+const nameSel = document.getElementById("n-name-select");
+nameSel.innerHTML = NODE_PRESETS.map(n=>`<option value="${n}">${n}</option>`).join("")
+  + '<option value="custom">Custom — type a name…</option>';
+nameSel.onchange = ()=>{
+  const custom = nameSel.value==="custom";
+  document.getElementById("n-name-custom-field").style.display = custom ? "" : "none";
+  if(custom){ document.getElementById("n-name").focus(); return; }
+  const sp = presetSpecs(nameSel.value);
+  if(sp){
+    document.getElementById("n-vcpu").value = sp.vcpu;
+    document.getElementById("n-ram").value = sp.ram;
+    document.getElementById("n-disk").value = sp.disk;
+    document.getElementById("n-rate").value = sp.rate;
+    document.getElementById("n-eligible").value = String(sp.eligible);
+  }
+};
+nameSel.value = "s1.xlarge";   // first name not in the default catalogue
+nameSel.onchange();
+
+function renderRates(o){
+  const fl = o.flavours; if(!fl) return;
+  const discounts = (o.pricing?.per_az||[]).map(r=>r.effective_discount);
+  const dMin = discounts.length? Math.min(...discounts) : 0;
+  const dMax = discounts.length? Math.max(...discounts) : 0;
+  const spotNow = f => !f.spot_eligible ? "—"
+    : dMin===dMax ? `₹${(f.rate_per_hour*(1-dMax)).toFixed(3)}`
+    : `₹${(f.rate_per_hour*(1-dMax)).toFixed(3)}–${(f.rate_per_hour*(1-dMin)).toFixed(3)}`;
+
+  // rebuild only when the flavour set or base prices actually change, so the
+  // 1 s poll never wipes a price the operator is mid-typing
+  const sig = JSON.stringify(fl.map(f=>[f.name,f.rate_per_hour,f.spot_eligible]));
+  if(S.ratesSig !== sig){
+    S.ratesSig = sig;
+    const rows = fl.map(f=>`<tr>
+      <td class="mono"><b>${esc(f.name)}</b></td>
+      <td class="num">${f.vcpu}</td>
+      <td class="num">${f.ram_gb}</td>
+      <td class="num">${f.disk_gb||0}</td>
+      <td>${f.spot_eligible
+        ? `<span class="chip"><i style="background:${cssv("--good")}"></i>spot</span>`
+        : `<span class="chip"><i style="background:${cssv("--muted")}"></i>on-demand only</span>`}</td>
+      <td class="num"><input type="number" step="0.01" min="0.01" max="10000"
+           value="${f.rate_per_hour.toFixed(2)}" data-rate-input="${esc(f.name)}"
+           style="width:92px;text-align:right"></td>
+      <td class="num" id="spot-now-${esc(f.name)}">${spotNow(f)}</td>
+      <td><button data-set-rate="${esc(f.name)}" style="font-size:12px;padding:4px 10px">Set price</button></td>
+    </tr>`).join("");
+    document.getElementById("rates-table").innerHTML =
+      `<thead><tr><th>node type</th><th class="num">vcpu</th><th class="num">ram gb</th>
+       <th class="num">hdd gb</th><th>class</th><th class="num">price ₹/h (1 node)</th>
+       <th class="num">spot ₹/h now</th><th></th></tr></thead><tbody>${rows}</tbody>`;
+  }else{
+    // light pass: only the live spot-price column moves with the discount
+    fl.forEach(f=>{
+      const cell = document.getElementById(`spot-now-${f.name}`);
+      if(cell) cell.textContent = spotNow(f);
+    });
+  }
+
+  // grey out catalogue names that are already published
+  const taken = new Set(fl.map(f=>f.name));
+  [...nameSel.options].forEach(op=>{
+    if(op.value==="custom") return;
+    const exists = taken.has(op.value);
+    op.disabled = exists;
+    op.textContent = exists ? `${op.value} — published` : op.value;
+  });
+
+  // launch control keeps its flavour list in step with the rate card
+  const ff = document.getElementById("f-flavour");
+  if(ff.options.length !== fl.length ||
+     !(ff.options[0]?.textContent||"").includes("vCPU")){
+    const cur = ff.value;
+    ff.innerHTML = fl.map(f=>`<option value="${esc(f.name)}" ${f.name==="s1.medium"?"selected":""}>${esc(f.name)} — ${f.vcpu} vCPU · ${f.ram_gb} GB RAM · ${f.disk_gb||0} GB disk</option>`).join("");
+    if([...ff.options].some(op=>op.value===cur)) ff.value = cur;
+  }
+}
+
+/* =====================================================================
+   resource trends — history + forecast from /ops/trends
+   ===================================================================== */
+const TREND_SERIES = [
+  {key:"premium", label:"Premium clients", css:"--s1"},
+  {key:"clients", label:"Spot clients",    css:"--s3"},
+  {key:"idle",    label:"Idle",            css:"--free", neutral:true},
+];
+const trendLabel = (ts,bucket) => {
+  const dt = new Date(ts*1000);
+  return bucket==="month" ? dt.toLocaleDateString([], {month:"short", year:"2-digit"})
+                          : dt.toLocaleDateString([], {day:"numeric", month:"short"});
+};
+
+async function loadTrends(){
+  let q = "range="+S.trendRange;
+  if(S.trendRange==="custom"){
+    const s = document.getElementById("trend-start").value,
+          e = document.getElementById("trend-end").value;
+    if(!s || !e){ document.getElementById("trend-msg").textContent = "pick both dates"; return; }
+    q += `&start=${s}&end=${e}`;
+  }
+  document.getElementById("trend-msg").textContent = "";
+  try{
+    const r = await fetch("/ops/trends?"+q);
+    const d = await r.json();
+    if(!r.ok){ document.getElementById("trend-msg").textContent = d.detail || "failed to load"; return; }
+    S.trend = d;
+    S.trendView = null;           // new data → reset zoom/pan
+    renderTrends();
+  }catch(_){ document.getElementById("trend-msg").textContent = "failed to load trends"; }
+}
+
+function drawTrend(host, d){
+  host.innerHTML = "";
+  host.style.position = "relative";
+  const all = d.series;
+  if(!all || all.length<2){ host.innerHTML='<div class="hint" style="padding:40px 0;text-align:center">not enough points</div>'; return; }
+
+  // zoom/pan window over the full series
+  if(!S.trendView || S.trendView.n !== all.length)
+    S.trendView = {i0:0, i1:all.length-1, n:all.length};
+  const {i0,i1} = S.trendView;
+  const smp = all.slice(i0, i1+1);
+  const n = smp.length;
+
+  const W = host.clientWidth || 900, H = 300;
+  const M = {t:14,r:52,b:22,l:8};                 // price axis on the right
+  const iw = W-M.l-M.r, ih = H-M.t-M.b;
+  const svg = el("svg",{width:"100%",height:H,viewBox:`0 0 ${W} ${H}`,role:"img",
+                        "aria-label":"Spot client capture — candlestick history and forecast",
+                        style:"cursor:crosshair;touch-action:none"});
+
+  // y domain from what is visible (stock-chart style, not 0-anchored)
+  let lo = Infinity, hi = -Infinity;
+  smp.forEach(r=>{
+    lo = Math.min(lo, r.low); hi = Math.max(hi, r.high);
+    if(S.trendShow.premium){ lo=Math.min(lo,r.premium); hi=Math.max(hi,r.premium); }
+    if(S.trendShow.idle){ lo=Math.min(lo,r.idle); hi=Math.max(hi,r.idle); }
+    if(S.trendShow.predicted){ lo=Math.min(lo,r.predicted); hi=Math.max(hi,r.predicted); }
+  });
+  const pad = (hi-lo)*0.12 || 10; lo = Math.max(0, lo-pad); hi += pad;
+  const x = i => M.l + iw*(i+0.5)/n;
+  const y = v => M.t + ih - ih*(v-lo)/(hi-lo);
+
+  for(let k=0;k<=4;k++){
+    const v = lo + (hi-lo)*k/4, yy = y(v);
+    svg.appendChild(el("line",{x1:M.l,y1:yy,x2:W-M.r,y2:yy,stroke:cssv("--grid"),"stroke-width":1}));
+    svg.appendChild(text(W-M.r+6, yy+3.5, fmt(v), {anchor:"start"}));
+  }
+  svg.appendChild(text(W-M.r+6, M.t-2, "vCPU", {anchor:"start", fs:9.5}));
+
+  // candles: spot client capture (green up, red down, hollow = forecast)
+  const cw = Math.max(2, Math.min(16, iw/n*0.6));
+  smp.forEach((r,i)=>{
+    const up = r.close >= r.open;
+    const col = cssv(up? "--good" : "--critical");
+    const fc = r.source==="forecast";
+    const cx = x(i);
+    svg.appendChild(el("line",{x1:cx,y1:y(r.high),x2:cx,y2:y(r.low),
+      stroke:col,"stroke-width":1,opacity:fc?.55:1}));
+    svg.appendChild(el("rect",{x:cx-cw/2,y:y(Math.max(r.open,r.close)),width:cw,
+      height:Math.max(1, Math.abs(y(r.open)-y(r.close))),rx:1,
+      fill: fc? "transparent" : col, stroke:col,"stroke-width":1.2,opacity:fc?.7:1}));
+  });
+
+  // overlay lines
+  const line = (key,colvar,dash)=>{
+    let p=""; smp.forEach((r,i)=>{ p += (i?" L":"M")+x(i)+","+y(r[key]); });
+    svg.appendChild(el("path",{d:p,fill:"none",stroke:cssv(colvar),"stroke-width":1.6,
+      opacity:.9, ...(dash?{"stroke-dasharray":dash}:{})}));
+  };
+  if(S.trendShow.premium)   line("premium","--s1");
+  if(S.trendShow.idle)      line("idle","--muted");
+  if(S.trendShow.predicted) line("predicted","--s4","6 4");
+
+  // the live TODAY marker
+  const li = smp.findIndex(r=>r.source==="live");
+  if(li>=0){
+    const tx = x(li);
+    svg.appendChild(el("line",{x1:tx,y1:M.t,x2:tx,y2:M.t+ih,stroke:cssv("--s1"),
+      "stroke-width":1.5,"stroke-dasharray":"3 3",opacity:.8}));
+    svg.appendChild(text(tx+5, M.t+10, "TODAY · live", {fs:10, w:700, fill:cssv("--s1")}));
+    svg.appendChild(el("circle",{cx:tx,cy:y(smp[li].close),r:4,fill:cssv("--s1"),
+      stroke:cssv("--surface"),"stroke-width":2}));
+  }
+
+  svg.appendChild(el("line",{x1:M.l,y1:M.t+ih,x2:W-M.r,y2:M.t+ih,stroke:cssv("--axis"),"stroke-width":1}));
+  const ticks = Math.min(5, n);
+  for(let k=0;k<ticks;k++){
+    const i = Math.round(k*(n-1)/(ticks-1||1));
+    svg.appendChild(text(x(i), H-6, trendLabel(smp[i].ts, d.bucket),
+      {anchor: i===0?"start":(i===n-1?"end":"middle")}));
+  }
+
+  // trading-style readout box
+  const readout = document.createElement("div");
+  readout.className = "mono";
+  readout.style.cssText = "position:absolute;top:6px;left:10px;font-size:11.5px;"+
+    "background:var(--surface);border:1px solid var(--border);border-radius:8px;"+
+    "padding:5px 9px;pointer-events:none;line-height:1.5;box-shadow:0 2px 8px rgba(0,0,0,.08)";
+  host.appendChild(readout);
+  const srcTag = s => s==="live" ? `<b style="color:${cssv("--s1")}">LIVE</b>`
+    : s==="forecast" ? `<b style="color:${cssv("--s4")}">FORECAST</b>` : "ACTUAL";
+  function updateReadout(i){
+    const r = smp[i], dl = r.close-r.open;
+    const pct = r.open? (100*dl/r.open).toFixed(1) : "0.0";
+    const dcol = cssv(dl>=0? "--good-text" : "--critical");
+    readout.innerHTML =
+      `<b>${trendLabel(r.ts,d.bucket)}</b> ${srcTag(r.source)} · spot clients `+
+      `O ${r.open} H ${r.high} L ${r.low} C <b>${r.close}</b> `+
+      `<b style="color:${dcol}">${dl>=0?"▲":"▼"} ${Math.abs(dl)} (${pct}%)</b><br>`+
+      `premium ${r.premium} · idle ${r.idle} · predicted ${r.predicted} vCPU`;
+  }
+  updateReadout(li>=0? li : n-1);
+
+  // crosshair
+  const vline = el("line",{y1:M.t,y2:M.t+ih,stroke:cssv("--axis"),"stroke-dasharray":"3 3",opacity:0});
+  const hline = el("line",{x1:M.l,x2:W-M.r,stroke:cssv("--axis"),"stroke-dasharray":"3 3",opacity:0});
+  svg.appendChild(vline); svg.appendChild(hline);
+
+  // interactions: hover crosshair · wheel zoom · drag pan · double-click reset
+  let drag = null;
+  const idxAt = ev => {
+    const bb = svg.getBoundingClientRect();
+    const px = (ev.clientX-bb.left)*(W/bb.width);
+    return {i: Math.max(0, Math.min(n-1, Math.floor((px-M.l)/iw*n))), px,
+            py: (ev.clientY-bb.top)*(H/bb.height)};
+  };
+  svg.addEventListener("mousemove", ev=>{
+    const {i,px,py} = idxAt(ev);
+    if(drag){
+      const shift = Math.round((drag.px-px)/iw*drag.n);
+      const width = drag.i1-drag.i0;
+      let ni0 = Math.max(0, Math.min(all.length-1-width, drag.i0+shift));
+      if(ni0 !== S.trendView.i0){
+        S.trendView = {i0:ni0, i1:ni0+width, n:all.length};
+        drawTrend(host, d);
+      }
+      return;
+    }
+    vline.setAttribute("x1",x(i)); vline.setAttribute("x2",x(i)); vline.setAttribute("opacity",1);
+    hline.setAttribute("y1",py); hline.setAttribute("y2",py); hline.setAttribute("opacity",1);
+    updateReadout(i);
+  });
+  svg.addEventListener("mouseleave", ()=>{
+    vline.setAttribute("opacity",0); hline.setAttribute("opacity",0);
+    updateReadout(li>=0? li : n-1);
+  });
+  svg.addEventListener("wheel", ev=>{
+    ev.preventDefault();
+    const {px} = idxAt(ev);
+    const frac = Math.max(0, Math.min(1, (px-M.l)/iw));
+    const newN = Math.max(5, Math.min(all.length, Math.round(n*(ev.deltaY>0? 1.25 : 0.8))));
+    if(newN===n) return;
+    const centre = i0 + frac*n;
+    let ni0 = Math.max(0, Math.min(all.length-newN, Math.round(centre-frac*newN)));
+    S.trendView = {i0:ni0, i1:ni0+newN-1, n:all.length};
+    drawTrend(host, d);
+  }, {passive:false});
+  svg.addEventListener("pointerdown", ev=>{
+    const {px} = idxAt(ev);
+    drag = {px, i0, i1, n};
+    svg.style.cursor = "grabbing";
+    svg.setPointerCapture(ev.pointerId);
+  });
+  svg.addEventListener("pointerup", ()=>{ drag=null; svg.style.cursor="crosshair"; });
+  svg.addEventListener("dblclick", ()=>{
+    S.trendView = {i0:0, i1:all.length-1, n:all.length};
+    drawTrend(host, d);
+  });
+
+  host.appendChild(svg);
+}
+
+function renderTrends(){
+  const d = S.trend; if(!d) return;
+  document.getElementById("trend-window").textContent =
+    `${d.series.length} buckets · ${d.bucket} resolution · ${fmt(d.total)} vCPU total`;
+
+  if(S.trendTable){
+    const srcChip = s => s==="live"
+      ? '<span class="chip"><i style="background:'+cssv("--s1")+'"></i>live</span>'
+      : s==="forecast"
+      ? '<span class="chip"><i style="background:'+cssv("--s4")+'"></i>forecast</span>'
+      : '<span class="chip"><i style="background:'+cssv("--good")+'"></i>actual</span>';
+    const rows = [...d.series].reverse().map(r=>{
+      const dl = r.close-r.open, dcol = cssv(dl>=0?"--good-text":"--critical");
+      return `<tr>
+      <td class="mono">${trendLabel(r.ts, d.bucket)}</td>
+      <td>${srcChip(r.source)}</td>
+      <td class="num">${fmt(r.open)}</td><td class="num">${fmt(r.high)}</td>
+      <td class="num">${fmt(r.low)}</td><td class="num"><b>${fmt(r.close)}</b></td>
+      <td class="num" style="color:${dcol}">${dl>=0?"▲":"▼"} ${Math.abs(dl)}</td>
+      <td class="num">${fmt(r.premium)}</td>
+      <td class="num">${fmt(r.idle)}</td><td class="num">${fmt(r.predicted)}</td></tr>`;}).join("");
+    document.getElementById("trend-table").innerHTML =
+      `<table><thead><tr><th>period</th><th>source</th><th class="num">open</th>
+       <th class="num">high</th><th class="num">low</th><th class="num">close</th>
+       <th class="num">Δ</th><th class="num">premium</th><th class="num">idle</th>
+       <th class="num">predicted</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }else{
+    drawTrend(document.getElementById("trend-chart"), d);
+  }
+
+  document.getElementById("trend-legend").innerHTML =
+    `<span><i style="background:${cssv("--good")}"></i>up candle (spot clients)</span>
+     <span><i style="background:${cssv("--critical")}"></i>down candle</span>
+     <span style="opacity:.7"><i style="background:transparent;border-color:${cssv("--s4")}"></i>hollow = forecast</span>`+
+    [["premium","Premium clients","--s1"],["idle","Idle","--muted"],
+     ["predicted","Predicted capture (dashed)","--s4"]].map(([k,l,c])=>
+      `<span data-toggle="${k}" style="cursor:pointer;opacity:${S.trendShow[k]?1:.35}">
+       <i style="background:${cssv(c)}"></i>${l}</span>`).join("")+
+    `<span style="opacity:.6">scroll = zoom · drag = pan · double-click = reset · click a series to toggle</span>`;
+  document.querySelectorAll("#trend-legend [data-toggle]").forEach(elm=>
+    elm.onclick = ()=>{ S.trendShow[elm.dataset.toggle] = !S.trendShow[elm.dataset.toggle];
+                        renderTrends(); });
+
+  // summary tiles
+  const past = d.series.filter(r=>r.past), fut = d.series.filter(r=>!r.past);
+  const avg = (rows,k)=> rows.length? Math.round(rows.reduce((a,r)=>a+r[k],0)/rows.length) : 0;
+  const err = past.length? Math.round(100*past.reduce((a,r)=>
+      a + Math.abs(r.predicted-r.clients)/Math.max(1,r.clients),0)/past.length) : 0;
+  const lastActual = past.length? past[past.length-1].clients : 0;
+  const endForecast = fut.length? fut[fut.length-1].predicted : lastActual;
+  const growth = lastActual? Math.round(100*(endForecast-lastActual)/lastActual) : 0;
+  const livePt = d.series.find(r=>r.source==="live");
+  const liveDl = livePt ? livePt.close - livePt.open : 0;
+  const tiles = [
+    livePt
+      ? ["Today · client capture", fmt(livePt.close), "vCPU",
+         `live from the capacity ledger · ${liveDl>=0?"▲ +":"▼ −"}${Math.abs(liveDl)} vs previous ${d.bucket}`]
+      : ["Avg premium allocation", fmt(avg(past,"premium")), "vCPU",
+         `${Math.round(100*avg(past,"premium")/d.total)}% of the fleet over this window`],
+    ["Avg client (spot) allocation", fmt(avg(past,"clients")), "vCPU", `${Math.round(100*avg(past,"clients")/d.total)}% of the fleet over this window`],
+    ["Avg idle", fmt(avg(past,"idle")), "vCPU", `${Math.round(100*avg(past,"idle")/d.total)}% unsold — the money spot recovers`],
+    ["Forecast client capture", fmt(endForecast), "vCPU",
+     `${growth>=0?"+":""}${growth}% vs today · historical prediction error ±${err}%`],
+  ];
+  document.getElementById("trend-tiles").innerHTML = tiles.map(([l,v,u,f])=>
+    `<div class="card tile"><div class="label">${l}</div>
+     <div class="value">${v}<span class="unit">${u}</span></div>
+     <div class="foot">${f}</div></div>`).join("");
+}
+
+/* =====================================================================
+   risk model — transparent 0–100 scores computed from live state
+   ===================================================================== */
+const riskLevel = s => s<25?["Low","--good"] : s<50?["Moderate","--warning"]
+                     : s<75?["High","--serious"] : ["Critical","--critical"];
+
+function riskModel(o){
+  const c = o.cluster;
+  const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+
+  const capacity = clamp((c.utilisation_pct-60)/40*100);           // 60% util → 0, 100% → 100
+  const depths = o.pools.map(p=> p.sellable_units>0 ? p.available_units/p.sellable_units : 0);
+  const worstDepth = depths.length? Math.min(...depths) : 1;
+  const pool = clamp((1-worstDepth)*100);
+  const preempting = o.leases.filter(l=>l.grace_remaining!=null).length;
+  const active = clamp(preempting*25 + (c.spot_reclaiming>0?25:0));
+  const ir = o.interruption.by_flavour_az;
+  const L = ir.reduce((a,r)=>a+r.leases,0), I = ir.reduce((a,r)=>a+r.interrupted,0);
+  const interruption = clamp(L? 100*I/L : 0);
+  const feed = clamp(Math.max(0, ...o.pools.map(p=>
+    p.degraded?100 : p.confidence<0.7?60 : p.age_seconds>10?40 : 0)));
+  const slo = clamp((o.slo.attainment==null?0:(1-o.slo.attainment)*100)
+                    + (o.slo.stalled_teardowns?50:0));
+
+  const factors = [
+    {key:"Capacity pressure",    score:capacity,     w:.25, why:`cluster at ${c.utilisation_pct}% utilisation`},
+    {key:"Pool depletion",       score:pool,         w:.25, why:`worst AZ has ${(worstDepth*100).toFixed(0)}% of sellable pool free`},
+    {key:"Active preemption",    score:active,       w:.15, why:`${preempting} lease(s) in grace · ${c.spot_reclaiming} vCPU reclaiming`},
+    {key:"Interruption history", score:interruption, w:.15, why:`${I} of ${L} leases ever preempted`},
+    {key:"Feed health",          score:feed,         w:.10, why: o.pools.map(p=>`${p.az} conf ${p.confidence}${p.degraded?" DEGRADED":""}`).join(" · ")},
+    {key:"Reclaim SLO",          score:slo,          w:.10, why: o.slo.attainment==null?"no reclaims measured yet"
+        :`${(o.slo.attainment*100).toFixed(0)}% inside budget · ${o.slo.stalled_teardowns} stalled teardowns`},
+  ];
+  const overall = clamp(factors.reduce((a,f)=>a+f.score*f.w, 0));
+  return {overall, factors, preempting};
+}
+
+function renderRisk(o){
+  const {overall, factors} = riskModel(o);
+  const [lvl, col] = riskLevel(overall);
+
+  document.getElementById("risk-overall").innerHTML = `
+    <div class="row" style="gap:16px">
+      <div style="font-size:52px;font-weight:650;letter-spacing:-1.5px;line-height:1;color:${cssv(col)}">${overall}</div>
+      <div>
+        <span class="chip" style="font-size:13px;padding:4px 12px"><i style="background:${cssv(col)}"></i>${lvl}</span>
+        <div class="hint" style="margin-top:5px">0 = calm · 100 = every driver maxed</div>
+      </div>
+    </div>
+    <div class="meter" style="height:9px;margin-top:14px">
+      <i style="width:${overall}%;background:${cssv(col)}"></i></div>
+    <div class="hint" style="margin-top:10px">
+      Drivers right now: ${factors.filter(f=>f.score>=25).sort((a,b)=>b.score-a.score)
+        .map(f=>`${f.key} (${f.score})`).join(" · ") || "nothing elevated"}</div>`;
+
+  document.getElementById("risk-factors").innerHTML = factors.map(f=>{
+    const [flvl, fcol] = riskLevel(f.score);
+    return `<div style="margin-bottom:11px">
+      <div class="row" style="justify-content:space-between">
+        <b style="font-size:12.5px">${f.key}</b>
+        <span class="mono" style="color:${cssv(fcol)}">${f.score} · ${flvl}</span>
+      </div>
+      <div class="bar-mini" style="margin-top:4px"><i style="width:${f.score}%;background:${cssv(fcol)}"></i></div>
+      <div class="hint" style="margin-top:2px">${esc(f.why)} · weight ${(f.w*100).toFixed(0)}%</div>
+    </div>`;}).join("");
+
+  // per-AZ preemption risk
+  const azRows = o.pools.map(p=>{
+    const depth = p.sellable_units>0 ? p.available_units/p.sellable_units : 0;
+    const score = Math.round((1-depth)*100);
+    const [alvl, acol] = riskLevel(score);
+    return `<tr><td class="mono">${p.az}</td>
+      <td class="num">${p.available_units} / ${p.sellable_units}</td>
+      <td class="num">${(depth*100).toFixed(0)}%</td>
+      <td class="num">${p.confidence}${p.degraded?' <span class="chip"><i style="background:'+cssv("--critical")+'"></i>DEGRADED</span>':""}</td>
+      <td><span class="chip"><i style="background:${cssv(acol)}"></i>${alvl}</span></td></tr>`;
+  }).join("");
+  document.getElementById("risk-az").innerHTML =
+    `<thead><tr><th>az</th><th class="num">pool free</th><th class="num">depth</th>
+     <th class="num">feed conf</th><th>risk</th></tr></thead><tbody>${azRows}</tbody>`;
+
+  // per-flavour interruption risk
+  const flRows = o.interruption.by_flavour_az.map(r=>{
+    const rate = r.leases? r.interrupted/r.leases : 0;
+    const small = r.leases < 5;
+    const [flvl, fcol] = small? ["low sample","--muted"] : riskLevel(rate*100);
+    return `<tr><td>${r.flavour}</td><td class="mono">${r.az}</td>
+      <td class="num">${r.interrupted} / ${r.leases}</td>
+      <td class="num">${(rate*100).toFixed(0)}%</td>
+      <td><span class="chip"><i style="background:${cssv(fcol)}"></i>${flvl}</span></td></tr>`;
+  }).join("") || `<tr><td colspan="5" class="hint">no lease history yet</td></tr>`;
+  document.getElementById("risk-flavour").innerHTML =
+    `<thead><tr><th>flavour</th><th>az</th><th class="num">preempted</th>
+     <th class="num">rate</th><th>risk</th></tr></thead><tbody>${flRows}</tbody>`;
+
+  // tenant exposure
+  const liveStates = ["RUNNING","NOTICE_ISSUED","DRAINING","ADMITTED","PROVISIONING"];
+  const liveUnits = {};
+  o.leases.filter(l=>liveStates.includes(l.state)).forEach(l=>{
+    liveUnits[l.tenant_id] = (liveUnits[l.tenant_id]||0) + l.units; });
+  const totalLive = Object.values(liveUnits).reduce((a,v)=>a+v,0);
+  const tRows = o.interruption.by_tenant.map(t=>{
+    const units = liveUnits[t.tenant_id]||0;
+    const share = totalLive? units/totalLive : 0;
+    return `<tr><td>${t.tenant_id.replace("tenant-","")}</td>
+      <td class="num">${units}</td>
+      <td class="num">${(share*100).toFixed(0)}%</td>
+      <td class="num">${t.interrupted} / ${t.leases}</td>
+      <td class="num">${(t.interruption_rate*100).toFixed(0)}%</td></tr>`;
+  }).join("") || `<tr><td colspan="5" class="hint">no tenants yet</td></tr>`;
+  document.getElementById("risk-tenant").innerHTML =
+    `<thead><tr><th>tenant</th><th class="num">live vCPU</th><th class="num">spot share</th>
+     <th class="num">preempted</th><th class="num">rate</th></tr></thead><tbody>${tRows}</tbody>`;
+  document.getElementById("risk-tenant-hint").textContent =
+    `one reclaim wave may take at most ${(o.config.blast_radius_fraction*100).toFixed(0)}% of a tenant's fleet (blast-radius cap)`;
+
+  // sidebar badge
+  const badge = document.getElementById("nav-risk");
+  badge.textContent = lvl.toLowerCase();
+  badge.style.color = overall>=50 ? cssv(col) : "";
+}
+
+function renderInventory(o){
+  const spec = Object.fromEntries((o.flavours||[]).map(f=>
+    [f.name, `${f.vcpu} vCPU · ${f.ram_gb} GB RAM · ${f.disk_gb||0} GB disk`]));
+  const rows = o.inventory.map(i=>`<tr>
+    <td class="mono">${i.az}</td>
+    <td><b>${i.flavour}</b><div class="hint">${spec[i.flavour]||""}</div></td>
+    <td class="num">${i.max_instances}</td>
+    <td class="num">${(i.discount*100).toFixed(0)}%</td>
+    <td class="num">${i.spot_rate_per_hour.toFixed(3)}</td>
+    <td class="num">${(i.interruption_rate_30d*100).toFixed(0)}%</td></tr>`).join("");
+  document.getElementById("inventory").innerHTML =
+    `<thead><tr><th>az</th><th>flavour</th><th class="num">max instances</th><th class="num">discount</th>
+     <th class="num">₹/h</th><th class="num">interruption 30d</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+function renderLeases(o){
+  const liveStates = ["RUNNING","NOTICE_ISSUED","DRAINING","ADMITTED","PROVISIONING"];
+  const shown = o.leases.filter(l=>
+    (S.leaseTenant==="all" || l.tenant_id===S.leaseTenant) &&
+    (S.leaseState==="all"  || (S.leaseState==="live" ? liveStates.includes(l.state)
+                                                     : l.state===S.leaseState)));
+  const dur = (a,b)=> (a&&b)? fmtDur(b-a) : "—";
+  const detailRow = l => `<tr class="lease-detail"><td colspan="10">
+    <div class="tl">
+      <span>⏱ admitted <b>${dur(l.timestamps.created_at, l.timestamps.admitted_at)}</b> after request</span>
+      <span>→ running <b>${dur(l.timestamps.admitted_at, l.timestamps.running_at)}</b> later</span>
+      ${l.timestamps.notice_at?`<span>→ ⚡ notice at <b>${clock(l.timestamps.notice_at)}</b></span>
+      <span>→ stopped <b>${dur(l.timestamps.notice_at, l.timestamps.stopped_at)}</b> into grace</span>`:""}
+      ${l.timestamps.closed_at?`<span>→ closed <b>${clock(l.timestamps.closed_at)}</b></span>`:""}
+    </div>
+    <div class="tl">
+      <span>machines: <b class="mono">${l.instance_ids.join(", ")||"—"}</b></span>
+      <span>billed: <b>₹${(l.billing.amount||0).toFixed(6)}</b> for ${(l.billing.billed_seconds||0).toFixed(1)}s</span>
+      ${l.billing.credit_raised? `<span>credit: <b>₹${l.billing.credit_raised.toFixed(6)}</b></span>`:""}
+      ${l.persist? '<span>💾 saves on preemption</span>':""}
+      ${l.resumed? '<span>▶ resumed from saved state</span>':""}
+      ${l.forced_stop? '<span style="color:var(--critical)">forced stop</span>':""}
+    </div></td></tr>`;
+  const rows = shown.map(l=>{
+    const cd = l.grace_remaining;
+    return `<tr data-lease="${l.lease_id}" title="click for the evidence timeline">
+      <td class="mono">${l.lease_id.slice(6,16)}</td>
+      <td>${l.tenant_id.replace("tenant-","")}</td>
+      <td>${l.flavour}×${l.count}</td>
+      <td class="num">${l.units}</td>
+      <td class="mono">${l.host_group||"—"}</td>
+      <td>${stateChip(l.state)}</td>
+      <td class="num">${cd!=null?`<b style="color:${cssv("--critical")}">${cd}s</b>`:"—"}</td>
+      <td class="num">${(l.discount_snapshot*100).toFixed(0)}%</td>
+      <td class="num">${l.billing.amount? l.billing.amount.toFixed(5):"—"}</td>
+      <td class="num">${fmtDur(l.age_seconds)}</td></tr>` +
+      (S.leaseOpen===l.lease_id ? detailRow(l) : "");}).join("")
+    || `<tr><td colspan="10" class="hint">no leases match this filter</td></tr>`;
+  document.getElementById("leases").innerHTML =
+    `<thead><tr><th>lease</th><th>tenant</th><th>flavour</th><th class="num">units</th>
+     <th>host</th><th>state</th><th class="num">grace</th><th class="num">disc</th>
+     <th class="num">billed</th><th class="num">age</th></tr></thead><tbody>${rows}</tbody>`;
+  document.getElementById("lease-count").textContent =
+    `${shown.length} of ${o.leases.length} · ${Object.entries(o.states).map(([k,v])=>k+" "+v).join(" · ")}`;
+
+  const liveCount = o.leases.filter(l=>liveStates.includes(l.state)).length;
+  document.getElementById("nav-leases").textContent = liveCount;
+
+  // tenant filter options (stable)
+  const tf = document.getElementById("lease-tenant");
+  const tenants = [...new Set(o.leases.map(l=>l.tenant_id))].sort();
+  if(tf.options.length !== tenants.length+1){
+    const cur = tf.value;
+    tf.innerHTML = '<option value="all">All tenants</option>'+
+      tenants.map(t=>`<option value="${t}">${t.replace("tenant-","")}</option>`).join("");
+    tf.value = [...tf.options].some(op=>op.value===cur) ? cur : "all";
+  }
+
+  // release picker on the controls page
+  const sel = document.getElementById("f-lease"), cur = sel.value;
+  const live = o.leases.filter(l=>!["CLOSED","REJECTED"].includes(l.state));
+  sel.innerHTML = live.map(l=>`<option value="${l.lease_id}">${l.lease_id.slice(6,16)} · ${l.flavour} · ${l.state}</option>`).join("")
+    || '<option value="">no live leases</option>';
+  if(live.some(l=>l.lease_id===cur)) sel.value=cur;
+}
+
+function renderSaved(o){
+  const rows = (o.saved_tasks||[]).map(t=>`<tr>
+    <td class="mono">${t.saved_id.slice(6,16)}</td>
+    <td>${t.tenant_id.replace("tenant-","")}</td>
+    <td>${t.flavour}×${t.count}</td>
+    <td class="mono">${t.az}</td>
+    <td class="mono">${t.vmids.join(", ")}</td>
+    <td class="num">${fmtDur((Date.now()/1000)-t.saved_at)} ago</td>
+    <td><button class="primary" data-resume="${t.saved_id}" data-tenant="${t.tenant_id}"
+        style="font-size:12px;padding:4px 12px">▶ Resume</button></td></tr>`).join("")
+    || `<tr><td colspan="7" class="hint">no saved tasks — launch with "💾 save task"
+        and preempt it to see one appear</td></tr>`;
+  document.getElementById("saved-tasks").innerHTML =
+    `<thead><tr><th>saved task</th><th>tenant</th><th>flavour</th><th>az</th>
+     <th>machine ids</th><th class="num">saved</th><th></th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+function renderOrders(o){
+  const rows = o.reclaim_orders.map(r=>`<tr>
+    <td class="mono">${r.order_id.slice(8,18)}</td>
+    <td class="num">${r.units}</td><td class="mono">${r.az}</td>
+    <td class="mono">${r.host_group||"any"}</td><td>${r.reason}</td>
+    <td class="mono">${clock(r.received_at)}</td></tr>`).join("")
+    || `<tr><td colspan="6" class="hint">no reclaim orders yet — use Drive the system</td></tr>`;
+  document.getElementById("orders").innerHTML =
+    `<thead><tr><th>order</th><th class="num">units</th><th>az</th><th>host group</th>
+     <th>reason</th><th>at</th></tr></thead><tbody>${rows}</tbody>`;
+  document.getElementById("nav-orders").textContent = o.reclaim_orders.length;
+}
+
+function renderLogs(o){
+  const st = s => s>=500?"--critical": s>=400?"--warning": "--good-text";
+  const calls = apiFiltered(o);
+  if(S.apiFormat==="json"){
+    document.getElementById("api-log").innerHTML =
+      `<pre class="mono" style="font-size:11.3px;line-height:1.5;white-space:pre-wrap">${
+        esc(JSON.stringify(calls, null, 2))}</pre>`;
+  }else{
+    document.getElementById("api-log").innerHTML =
+      `<table><thead><tr><th>time</th><th>status</th><th>method</th><th>path</th>
+       </tr></thead><tbody>` +
+      (calls.map(c=>`<tr>
+        <td class="mono">${clock(c.ts)}</td>
+        <td><b style="color:${cssv(st(c.status))}">${c.status}</b></td>
+        <td class="mono">${c.method}</td>
+        <td class="mono">${esc(c.path)}</td></tr>`).join("")
+       || '<tr><td colspan="4" class="hint">no API calls in this window</td></tr>') +
+      "</tbody></table>";
+  }
+  const m = o.metrics;
+  document.getElementById("lat").textContent =
+    `${m.counters["http.total"]||0} calls · timings in the JSON/CSV export`;
+
+  const topicColour = t => t.includes("preempt")?"--critical" : t.includes("capacity")?"--s3"
+    : t.includes("pool")?"--s1" : t.includes("usage")||t.includes("credit")?"--s2" : "--muted";
+  const hidePool = document.getElementById("hide-pool").checked;
+  document.getElementById("events").innerHTML = o.events
+    .filter(e=> !(hidePool && e.topic==="spot.pool.updated")).map(e=>
+    `<div><span class="tick">${clock(e.ts)}</span>
+     <span style="color:${cssv(topicColour(e.topic))}">${esc(e.topic)}</span>
+     <span class="tick">${esc(JSON.stringify(e.payload).slice(0,60))}</span></div>`).join("")
+    || '<div class="hint">no events yet</div>';
+
+  renderAudit();
+}
+
+/* =====================================================================
+   audit explorer — time range + table/JSON views + export
+   ===================================================================== */
+function apiFiltered(o){
+  const src = o?.metrics?.recent_calls || [];
+  if(S.apiRange==="all") return src;
+  const cut = Date.now()/1000 - (+S.apiRange);
+  return src.filter(c=>c.ts >= cut);
+}
+function auditDetails(a){
+  return Object.entries(a).filter(([k])=>!["seq","ts","kind"].includes(k))
+    .map(([k,v])=>`${k}=${typeof v==="object"?JSON.stringify(v):v}`).join(" ");
+}
+function auditFiltered(){
+  const src = S.auditFull || S.overview?.audit || [];
+  const now = Date.now()/1000;
+  let rows;
+  if(S.audRange==="all") rows = src;
+  else if(S.audRange==="custom"){
+    const s = document.getElementById("aud-start").value,
+          e = document.getElementById("aud-end").value;
+    const s0 = s? new Date(s).getTime()/1000 : 0,
+          e0 = e? new Date(e).getTime()/1000 : Infinity;
+    rows = src.filter(a=> a.ts>=s0 && a.ts<=e0);
+  }else rows = src.filter(a=> a.ts >= now - (+S.audRange));
+  return [...rows].sort((a,b)=>b.seq-a.seq);
+}
+function renderAudit(){
+  const rows = auditFiltered();
+  const src30 = (S.auditFull || S.overview?.audit || []);
+  const last30 = src30.filter(a=>a.ts >= Date.now()/1000 - 1800).length;
+  document.getElementById("aud-count").textContent =
+    `${rows.length} entries in view · ${last30} in the last 30 min · append-only evidence`;
+  const host = document.getElementById("audit");
+  if(S.audFormat==="json"){
+    host.innerHTML = `<pre class="mono" style="font-size:11.3px;line-height:1.5;white-space:pre-wrap">${
+      esc(JSON.stringify(rows, null, 2))}</pre>`;
+  }else{
+    host.innerHTML = `<table><thead><tr><th>#</th><th>time</th><th>kind</th>
+      <th>details</th></tr></thead><tbody>${rows.map(a=>`<tr>
+      <td class="mono">${a.seq}</td>
+      <td class="mono">${clock(a.ts)}</td>
+      <td><b>${esc(a.kind)}</b></td>
+      <td class="mono" style="white-space:normal;word-break:break-word">${esc(auditDetails(a))}</td></tr>`).join("")
+      || '<tr><td colspan="4" class="hint">no audit entries in this window</td></tr>'}</tbody></table>`;
+  }
+}
+function download(name, mime, content){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([content], {type:mime}));
+  a.download = name; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* =====================================================================
+   spot demand — /ops/demand
+   ===================================================================== */
+async function loadDemand(){
+  let q = "range="+S.demRange;
+  if(S.demRange==="custom"){
+    const s = document.getElementById("dem-start").value,
+          e = document.getElementById("dem-end").value;
+    if(!s || !e){ document.getElementById("dem-msg").textContent = "pick both dates"; return; }
+    q += `&start=${s}&end=${e}`;
+  }
+  document.getElementById("dem-msg").textContent = "";
+  try{
+    const r = await fetch("/ops/demand?"+q);
+    const d = await r.json();
+    if(!r.ok){ document.getElementById("dem-msg").textContent = d.detail||"failed"; return; }
+    S.demand = d;
+    renderDemand();
+  }catch(_){ document.getElementById("dem-msg").textContent = "failed to load demand"; }
+}
+function renderDemand(){
+  const d = S.demand; if(!d) return;
+  const hourly = d.bucket_seconds < 86400;
+  const busiest = d.series.reduce((a,b)=> b.count>a.count? b : a, {count:0});
+  const top = d.by_flavour[0];
+  const tiles = [
+    ["Total checks", fmt(d.total_checks), "", "availability checks + launch attempts"],
+    ["Live events", fmt(d.live_events), "", "recorded by this process — the rest is reconstructed history"],
+    ["Top node type", top? top.flavour : "—", "",
+     top? `${fmt(top.checks)} checks · ${(top.share*100).toFixed(0)}% of demand` : "no demand yet"],
+    ["Busiest period", busiest.count? (hourly? clock(busiest.ts) : new Date(busiest.ts*1000)
+       .toLocaleDateString([], {day:"numeric",month:"short"})) : "—", "",
+     busiest.count? `${fmt(busiest.count)} checks` : ""],
+    ["Reclaim orders", fmt(S.overview?.reclaim_orders?.length ?? 0), "",
+     "capacity-side orders — details on the Reclaim orders page"],
+  ];
+  document.getElementById("dem-tiles").innerHTML = tiles.map(([l,v,u,f])=>
+    `<div class="card tile"><div class="label">${l}</div>
+     <div class="value">${esc(String(v))}<span class="unit">${u}</span></div>
+     <div class="foot">${f}</div></div>`).join("");
+
+  document.getElementById("dem-bars").innerHTML = d.by_flavour.map(r=>`
+    <div style="margin-bottom:10px">
+      <div class="row" style="justify-content:space-between;font-size:12.5px">
+        <b class="mono">${esc(r.flavour)}</b>
+        <span class="mono">${fmt(r.checks)} · ${(r.share*100).toFixed(0)}%</span></div>
+      <div class="bar-mini" style="height:9px;margin-top:3px">
+        <i style="width:${r.share*100}%;background:${cssv("--s1")}"></i></div>
+    </div>`).join("") || '<div class="hint">no demand recorded in this window</div>';
+
+  // vertical bars over time; reconstructed buckets render lighter
+  const host = document.getElementById("dem-series");
+  host.innerHTML = "";
+  const W = host.clientWidth || 500, H = 170, M = {t:8,r:6,b:20,l:30};
+  const iw = W-M.l-M.r, ih = H-M.t-M.b;
+  const svg = el("svg",{width:"100%",height:H,viewBox:`0 0 ${W} ${H}`});
+  const max = Math.max(1, ...d.series.map(b=>b.count));
+  svg.appendChild(text(M.l-6, M.t+4, fmt(max), {anchor:"end"}));
+  svg.appendChild(text(M.l-6, M.t+ih, "0", {anchor:"end"}));
+  const bw = Math.max(2, iw/d.series.length - 2);
+  d.series.forEach((b,i)=>{
+    const h = ih*b.count/max;
+    const r = el("rect",{x:M.l+i*(iw/d.series.length)+1, y:M.t+ih-h,
+      width:bw, height:Math.max(b.count?2:0,h), rx:1.5,
+      fill:cssv(b.synthetic? "--axis" : "--s1"), opacity:b.synthetic?.55:.95});
+    r.addEventListener("mousemove",ev=>showTip(ev.clientX,ev.clientY,
+      `<b>${hourly? clock(b.ts) : new Date(b.ts*1000).toLocaleDateString()}</b><br>`+
+      `${fmt(b.count)} checks${b.synthetic?" · reconstructed":""}`));
+    r.addEventListener("mouseleave",hideTip);
+    svg.appendChild(r);
+  });
+  svg.appendChild(el("line",{x1:M.l,y1:M.t+ih,x2:W-M.r,y2:M.t+ih,stroke:cssv("--axis")}));
+  [0, d.series.length-1].forEach(i=>{
+    const b=d.series[i]; if(!b) return;
+    svg.appendChild(text(M.l+i*(iw/d.series.length), H-5,
+      hourly? clock(b.ts) : new Date(b.ts*1000).toLocaleDateString([],{day:"numeric",month:"short"}),
+      {anchor: i===0?"start":"end"}));
+  });
+  host.appendChild(svg);
+  document.getElementById("dem-series-note").textContent =
+    d.series.some(b=>b.synthetic) ? "· lighter bars = reconstructed history" : "";
+}
+
+/* =====================================================================
+   render + polling
+   ===================================================================== */
+function render(){
+  const o = S.overview; if(!o) return;
+  // the 1 s refresh rebuilds tables and charts; snapshot every scroll position
+  // first and restore after, so reading mid-page never gets yanked back up
+  const winY = scrollY;
+  const scrolls = [...document.querySelectorAll(".scroll")].map(e=>[e, e.scrollTop]);
+  renderStatbar(o);
+  renderPipeline(o);
+  renderBanner(o);
+  renderTiles(o);
+  if(S.series){
+    const aSig = S.series.length + ":" + (S.series[S.series.length-1]?.ts||0) + ":" +
+      (document.getElementById("area-chart").clientWidth|0) + ":" + S.tsTable;
+    if(aSig !== S.areaSig){                  // samples arrive every 2 s — skip
+      S.areaSig = aSig;                      // the other redraws entirely
+      if(S.tsTable) drawAreaTable(document.getElementById("area-table"), S.series);
+      else drawArea(document.getElementById("area-chart"), S.series);
+      legend(document.getElementById("area-legend"), SERIES);
+    }
+  }
+  // host-group filter
+  const hf = document.getElementById("hg-filter");
+  if(hf.options.length !== o.host_groups.length+1){
+    const cur = hf.value;
+    hf.innerHTML = '<option value="all">All host groups</option>'+
+      o.host_groups.map(h=>`<option value="${h.host_group}">${h.host_group} · ${h.az}</option>`).join("");
+    hf.value = [...hf.options].some(op=>op.value===cur) ? cur : "all";
+  }
+  const hgs = S.hgFilter==="all" ? o.host_groups
+              : o.host_groups.filter(h=>h.host_group===S.hgFilter);
+  const hSig = JSON.stringify(hgs) +
+    (document.getElementById("hg-chart").clientWidth|0);
+  if(hSig !== S.hgSig){
+    S.hgSig = hSig;
+    drawHostGroups(document.getElementById("hg-chart"), hgs);
+    legend(document.getElementById("hg-legend"), SERIES);
+    renderHostGroupTable(hgs);
+  }
+
+  renderPools(o); renderInventory(o); renderPricing(o); renderRates(o); renderRisk(o);
+  renderBilling(o);
+  renderLeases(o); renderSaved(o); renderOrders(o); renderLogs(o);
+
+  const sel = document.getElementById("f-tenant");
+  if(!sel.options.length){
+    sel.innerHTML = o.tenants.map(t=>`<option ${t==="tenant-spot-a"?"selected":""}>${t}</option>`).join("");
+  }
+  // AZ pickers only offer zones that really exist (live mode: the real node's)
+  ["f-az","r-az"].forEach(id=>{
+    const az = document.getElementById(id);
+    if(az.options.length !== o.pools.length){
+      const cur = az.value;
+      az.innerHTML = o.pools.map(p=>`<option>${p.az}</option>`).join("");
+      if([...az.options].some(op=>op.value===cur)) az.value = cur;
+    }
+  });
+
+  scrolls.forEach(([e,t])=>{ if(e.isConnected && e.scrollTop!==t) e.scrollTop = t; });
+  if(Math.abs(scrollY - winY) > 1) scrollTo(0, winY);
+}
+
+async function tick(){
+  if(S.paused) return;
+  try{
+    const [o, ts] = await Promise.all([
+      fetch("/ops/overview").then(r=>r.json()),
+      fetch("/ops/timeseries?limit=150").then(r=>r.json()),
+    ]);
+    S.overview = o; S.series = ts.samples;
+    document.getElementById("conn-dot").classList.remove("stale");
+    document.getElementById("conn-text").textContent = "live · " + clock(o.now);
+    const bk = o.backend, bp = document.getElementById("backend-pill");
+    if(bk && bk.mode==="proxmox"){
+      bp.innerHTML = `<i class="dot"></i><b>LIVE</b>&nbsp;· Proxmox ${esc(bk.node)} · ${bk.cores} cores`;
+      bp.title = `real hypervisor: ${esc(bk.node)} · ${bk.cores} cores · ${bk.mem_gb} GB · PVE ${esc(bk.pve_version||"")}`;
+    }else if(bk){
+      bp.textContent = "SIMULATED";
+      bp.title = esc(bk.detail || "in-memory stubs");
+    }
+    document.getElementById("cycle-pill").textContent =
+      `grace ${o.config.grace_seconds}s · force-stop ${o.config.force_stop_at}s · control cycle ${o.config.control_cycle_seconds}s`;
+    document.getElementById("ts-window").textContent =
+      `${ts.samples.length} samples · ${ts.interval_seconds}s interval`;
+    render();
+    showToasts(o);
+    S.tickN++;
+    // live refresh for the pages with their own endpoints, only while visible
+    if(document.getElementById("page-logs").classList.contains("active"))
+      fetch("/ops/audit").then(r=>r.json())
+        .then(a=>{ S.auditFull = a; renderAudit(); }).catch(()=>{});
+    if(S.tickN % 5 === 0 &&
+       document.getElementById("page-demand").classList.contains("active") &&
+       S.demRange !== "custom")
+      loadDemand();
+    if(S.tickN % 5 === 0 &&
+       document.getElementById("page-capacity").classList.contains("active"))
+      loadHost();
+  }catch(e){
+    document.getElementById("conn-dot").classList.add("stale");
+    document.getElementById("conn-text").textContent = "disconnected";
+  }
+}
+
+/* =====================================================================
+   controls
+   ===================================================================== */
+function msg(id, ok, html){
+  document.getElementById(id).innerHTML = `<span class="${ok?"ok":"err"}">${html}</span>`;
+}
+async function call(method, path, body, headers={}){
+  const res = await fetch(path, {method, headers:{"content-type":"application/json",...headers},
+                                 body: body?JSON.stringify(body):undefined});
+  let data=null; try{ data = await res.json(); }catch(_){}
+  return {status:res.status, data, retryAfter:res.headers.get("Retry-After")};
+}
+
+document.getElementById("btn-launch").onclick = async ()=>{
+  const drain = document.getElementById("f-drain").value;
+  const r = await call("POST","/spot/leases",{
+    flavour: document.getElementById("f-flavour").value,
+    count: +document.getElementById("f-count").value,
+    az: document.getElementById("f-az").value,
+    drain_seconds: drain===""? null : +drain,
+    persist: document.getElementById("f-persist").value==="1",
+  },{"X-Tenant-Id": document.getElementById("f-tenant").value,
+     "Idempotency-Key": "ui-"+Math.random().toString(36).slice(2,10)});
+  if(r.status===201) msg("launch-msg", true, `201 · lease ${r.data.lease_id} admitted, ${r.data.units} vCPU at ${(r.data.discount_snapshot*100).toFixed(0)}% off`);
+  else if(r.status===409) msg("launch-msg", false, `409 no_capacity · Retry-After ${r.retryAfter}s · alternatives: ${JSON.stringify(r.data.alternatives)}`);
+  else msg("launch-msg", false, `${r.status} ${r.data?.error||""} · ${esc(r.data?.message||r.data?.detail||"")}`);
+  tick();
+};
+
+document.getElementById("btn-burst").onclick = async ()=>{
+  const tenant = document.getElementById("f-tenant").value;
+  const rs = await Promise.all([...Array(6)].map((_,i)=>call("POST","/spot/leases",
+    {flavour:"s1.medium", count:1, az: document.getElementById("f-az").value, drain_seconds:1.0},
+    {"X-Tenant-Id":tenant,"Idempotency-Key":"burst-"+Date.now()+"-"+i})));
+  const ok = rs.filter(r=>r.status===201).length;
+  msg("release-msg", true, `burst: ${ok} admitted, ${rs.length-ok} rejected (${[...new Set(rs.map(r=>r.status))].join("/")}) — the reserve is atomic, so no over-allocation`);
+  tick();
+};
+
+document.getElementById("btn-reclaim").onclick = async ()=>{
+  const r = await call("POST","/internal/spot/reclaim",{
+    units:+document.getElementById("r-units").value,
+    az:document.getElementById("r-az").value, reason:"dashboard"});
+  msg("reclaim-msg", true, `200 · order ${r.data.order_id} preempting ${r.data.preempted.length} lease(s), ${r.data.units_freed} vCPU`);
+  tick();
+};
+
+document.getElementById("btn-headroom").onclick = async ()=>{
+  const r = await call("POST","/sim/headroom",{az:"az-1", units:+document.getElementById("h-units").value});
+  msg("reclaim-msg", true, `200 · headroom ${r.data.headroom_units}, live spot ${r.data.spot_units_live}, shortfall ${r.data.shortfall_units}`
+    + (r.data.reclaim? ` → reclaim ${r.data.reclaim.order_id} took ${r.data.reclaim.units_freed} vCPU` : " → nothing to reclaim"));
+  tick();
+};
+
+document.getElementById("btn-release").onclick = async ()=>{
+  const id = document.getElementById("f-lease").value;
+  if(!id) return msg("release-msg", false, "no lease selected");
+  const r = await call("DELETE", `/spot/leases/${id}`);
+  msg("release-msg", true, `${r.status} · ${id.slice(6,16)} → ${r.data.state}`);
+  tick();
+};
+
+document.getElementById("p-mode").onchange = e=>{
+  const manual = e.target.value==="manual";
+  document.getElementById("p-manual-fields").style.display = manual ? "" : "none";
+  document.getElementById("btn-pricing").textContent =
+    manual ? "Apply · POST /ops/pricing" : "Revert to automatic · POST /ops/pricing";
+};
+
+document.getElementById("btn-pricing").onclick = async ()=>{
+  const mode = document.getElementById("p-mode").value;
+  const body = mode==="manual"
+    ? {mode, discount: +document.getElementById("p-discount").value/100,
+       duration_seconds: +document.getElementById("p-duration").value,
+       az: document.getElementById("p-az").value || null}
+    : {mode:"auto"};
+  const r = await call("POST","/ops/pricing", body);
+  if(r.status===200 && r.data.override)
+    msg("pricing-msg", true, `200 · pinned at ${(r.data.override.discount*100).toFixed(0)}% for ${fmtDur(r.data.override.duration_seconds)} (${r.data.override.az||"all AZs"})`);
+  else if(r.status===200)
+    msg("pricing-msg", true, "200 · automatic pricing active — the curve is back in charge");
+  else
+    msg("pricing-msg", false, `${r.status} · ${esc(JSON.stringify(r.data?.detail||r.data||""))}`);
+  tick();
+};
+
+document.getElementById("rates-table").addEventListener("click", async ev=>{
+  const btn = ev.target.closest("[data-set-rate]"); if(!btn) return;
+  const flavour = btn.dataset.setRate;
+  const input = document.querySelector(`[data-rate-input="${CSS.escape(flavour)}"]`);
+  const rate = +input.value;
+  if(!(rate>0)) return msg("rates-msg", false, "price must be a positive number");
+  const r = await call("POST","/ops/rates",{flavour, rate_per_hour: rate});
+  if(r.status===200)
+    msg("rates-msg", true, `200 · ${esc(flavour)} re-priced to ₹${r.data.rate_per_hour}/h — new leases and inventory use it immediately`);
+  else
+    msg("rates-msg", false, `${r.status} · ${esc(JSON.stringify(r.data?.detail||""))}`);
+  tick();
+});
+
+document.getElementById("btn-flavour").onclick = async ()=>{
+  const sel = document.getElementById("n-name-select").value;
+  const body = {
+    name: sel==="custom" ? document.getElementById("n-name").value.trim() : sel,
+    vcpu: +document.getElementById("n-vcpu").value,
+    ram_gb: +document.getElementById("n-ram").value,
+    disk_gb: +document.getElementById("n-disk").value,
+    rate_per_hour: +document.getElementById("n-rate").value,
+    spot_eligible: document.getElementById("n-eligible").value==="true",
+  };
+  if(!body.name) return msg("rates-msg", false, "give the node type a name, e.g. s1.xlarge");
+  const r = await call("POST","/ops/flavours", body);
+  if(r.status===201){
+    msg("rates-msg", true, `201 · ${esc(body.name)} published: ${body.vcpu} vCPU · ${body.ram_gb} GB RAM · ${body.disk_gb} GB HDD at ₹${body.rate_per_hour}/h`);
+    document.getElementById("n-name").value = "";
+  }else
+    msg("rates-msg", false, `${r.status} · ${esc(JSON.stringify(r.data?.detail||""))}`);
+  tick();
+};
+
+document.getElementById("btn-demo").onclick = runGuidedDemo;
+document.getElementById("bill-client").onchange = ()=>{ if(S.overview) renderBilling(S.overview); };
+
+document.getElementById("leases").addEventListener("click", ev=>{
+  const id = ev.target.closest("[data-lease]")?.dataset.lease;
+  if(!id) return;
+  S.leaseOpen = (S.leaseOpen===id)? null : id;
+  render();
+});
+
+document.getElementById("saved-tasks").addEventListener("click", async ev=>{
+  const btn = ev.target.closest("[data-resume]"); if(!btn) return;
+  btn.disabled = true; btn.textContent = "resuming…";
+  const r = await call("POST", `/spot/saved/${btn.dataset.resume}/resume`, null,
+                       {"X-Tenant-Id": btn.dataset.tenant});
+  if(r.status===201)
+    msg("saved-msg", true, `201 · task resumed as lease ${r.data.lease_id} — the machines continue exactly where they stopped`);
+  else
+    msg("saved-msg", false, `${r.status} · ${esc(JSON.stringify(r.data?.detail||r.data?.message||""))}`);
+  tick();
+});
+
+const pauseBtn = document.getElementById("pause");
+pauseBtn.onclick = ()=>{
+  if(S.paused){                       // resuming needs no ceremony
+    S.paused = false; pauseBtn.textContent = "Pause"; tick(); return;
+  }
+  document.getElementById("modal").hidden = false;
+};
+document.getElementById("modal-cancel").onclick = ()=>
+  document.getElementById("modal").hidden = true;
+document.getElementById("modal-confirm").onclick = ()=>{
+  document.getElementById("modal").hidden = true;
+  S.paused = true; pauseBtn.textContent = "Resume";
+};
+document.getElementById("modal").addEventListener("click", ev=>{
+  if(ev.target.id==="modal") ev.target.hidden = true;   // click outside = cancel
+});
+
+function applyTheme(theme){
+  document.documentElement.setAttribute("data-theme", theme);
+  document.getElementById("theme").textContent = theme==="dark" ? "Light" : "Dark";
+  try{ localStorage.setItem("spot-theme", theme); }catch(_){}
+}
+document.getElementById("theme").onclick = ()=>{
+  const dark = document.documentElement.getAttribute("data-theme")==="dark";
+  applyTheme(dark ? "light" : "dark");
+  render();
+  if(S.trend) renderTrends();
+};
+try{  // survive refreshes: restore the saved theme before the first data paint
+  const saved = localStorage.getItem("spot-theme");
+  if(saved) applyTheme(saved);
+}catch(_){}
+
+{ // sidebar: wrap the label text of every nav link so it can hide when
+  // collapsed to an icon rail; the icon keeps a tooltip with the full name
+  document.querySelectorAll("nav.nav a").forEach(a=>{
+    [...a.childNodes].forEach(nd=>{
+      if(nd.nodeType===3 && nd.textContent.trim()){
+        const s = document.createElement("span");
+        s.className = "lbl"; s.textContent = nd.textContent.trim();
+        a.replaceChild(s, nd);
+      }
+    });
+    a.title = a.querySelector(".lbl")?.textContent || "";
+  });
+  const side = document.querySelector("aside.side");
+  const st = document.getElementById("side-toggle");
+  const setSide = min=>{
+    side.classList.toggle("collapsed", min);
+    st.textContent = min? "»" : "«";
+    st.title = min? "Expand sidebar" : "Collapse sidebar";
+    try{ localStorage.setItem("spot-side", min?"min":"full"); }catch(_){}
+  };
+  st.onclick = ()=> setSide(!side.classList.contains("collapsed"));
+  try{ setSide(localStorage.getItem("spot-side")==="min"); }catch(_){}
+}
+document.getElementById("ts-toggle").onclick = e=>{
+  S.tsTable=!S.tsTable;
+  document.getElementById("area-chart").hidden=S.tsTable;
+  document.getElementById("area-table").hidden=!S.tsTable;
+  e.target.textContent = S.tsTable?"Chart view":"Table view";
+  render();
+};
+document.getElementById("hg-filter").onchange = e=>{S.hgFilter=e.target.value; render();};
+document.getElementById("lease-state").onchange = e=>{S.leaseState=e.target.value; render();};
+document.getElementById("lease-tenant").onchange = e=>{S.leaseTenant=e.target.value; render();};
+document.getElementById("hide-pool").onchange = ()=>render();
+
+document.querySelectorAll(".trange").forEach(b=> b.onclick = ()=>{
+  S.trendRange = b.dataset.range;
+  document.querySelectorAll(".trange").forEach(x=>x.classList.toggle("active", x===b));
+  document.getElementById("trend-custom").style.display =
+    S.trendRange==="custom" ? "" : "none";
+  if(S.trendRange!=="custom") loadTrends();
+});
+document.getElementById("trend-apply").onclick = loadTrends;
+document.getElementById("trend-toggle").onclick = e=>{
+  S.trendTable = !S.trendTable;
+  document.getElementById("trend-chart").hidden = S.trendTable;
+  document.getElementById("trend-table").hidden = !S.trendTable;
+  e.target.textContent = S.trendTable ? "Chart view" : "Table view";
+  renderTrends();
+};
+{ // sensible custom-range defaults: two months back to one month ahead
+  const iso = d => d.toISOString().slice(0,10);
+  const now = new Date();
+  document.getElementById("trend-start").value = iso(new Date(now-60*864e5));
+  document.getElementById("trend-end").value = iso(new Date(+now+30*864e5));
+  document.getElementById("dem-start").value = iso(new Date(now-30*864e5));
+  document.getElementById("dem-end").value = iso(now);
+}
+
+// audit explorer controls
+document.getElementById("api-range").onchange = e=>{
+  S.apiRange = e.target.value; if(S.overview) renderLogs(S.overview);
+};
+document.getElementById("api-format").onchange = e=>{
+  S.apiFormat = e.target.value; if(S.overview) renderLogs(S.overview);
+};
+document.getElementById("api-dl-json").onclick = ()=>
+  download("api-calls.json", "application/json",
+           JSON.stringify(apiFiltered(S.overview), null, 2));
+document.getElementById("api-dl-csv").onclick = ()=>{
+  const rows = apiFiltered(S.overview);
+  download("api-calls.csv", "text/csv",
+    "ts,status,method,path,ms\n" + rows.map(c=>
+      `${c.ts},${c.status},${c.method},"${c.path}",${c.ms}`).join("\n"));
+};
+
+document.getElementById("aud-range").onchange = e=>{
+  S.audRange = e.target.value;
+  document.getElementById("aud-custom").style.display =
+    S.audRange==="custom" ? "" : "none";
+  renderAudit();
+};
+document.getElementById("aud-start").onchange = renderAudit;
+document.getElementById("aud-end").onchange = renderAudit;
+document.getElementById("aud-format").onchange = e=>{ S.audFormat = e.target.value; renderAudit(); };
+document.getElementById("aud-dl-json").onclick = ()=>
+  download("audit.json", "application/json", JSON.stringify(auditFiltered(), null, 2));
+document.getElementById("aud-dl-csv").onclick = ()=>{
+  const rows = auditFiltered();
+  const csv = "seq,ts,kind,details\n" + rows.map(a=>
+    `${a.seq},${a.ts},${a.kind},"${auditDetails(a).replace(/"/g,'""')}"`).join("\n");
+  download("audit.csv", "text/csv", csv);
+};
+
+// demand controls
+document.querySelectorAll(".drange").forEach(b=> b.onclick = ()=>{
+  S.demRange = b.dataset.range;
+  document.querySelectorAll(".drange").forEach(x=>x.classList.toggle("active", x===b));
+  document.getElementById("dem-custom").style.display =
+    S.demRange==="custom" ? "" : "none";
+  if(S.demRange!=="custom") loadDemand();
+});
+document.getElementById("dem-apply").onclick = loadDemand;
+
+addEventListener("resize", ()=>{ if(S.series) render(); if(S.trend) renderTrends(); });
+
+route();
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>

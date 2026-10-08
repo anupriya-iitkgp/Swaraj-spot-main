@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" data-build="__BUILD__">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESDS Spot — console</title>
+<meta name="description" content="Spot capacity: the customer contract and the reclaim path, live.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/console-assets/app.css">
+<script src="/console-assets/boot.js"></script>
+<script type="module" src="/console-assets/app.js?v=__BUILD__"></script>
+</head>
+<body>
+<!--
+  Everything below is replaced by the app on boot. It exists so that a browser
+  with JavaScript disabled, or a deploy where a module failed to load, gets an
+  explanation and the API instead of a blank page.
+-->
+<noscript>
+  <div class="boot">
+    <h1>Spot console</h1>
+    <p>This console needs JavaScript. The API does not:</p>
+    <ul>
+      <li><code>GET /spot/inventory</code> — what is for sale</li>
+      <li><code>POST /spot/leases</code> — launch</li>
+      <li><code>GET /docs</code> — the full contract</li>
+    </ul>
+  </div>
+</noscript>
+<div id="root">
+  <div class="boot" id="boot">
+    <div class="boot-mark" aria-hidden="true"></div>
+    <p>Loading the console…</p>
+  </div>
+</div>
+</body>
+</html>

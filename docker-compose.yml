@@ -1,0 +1,24 @@
+services:
+  spot:
+    build: .
+    image: esds-spot:latest
+    container_name: spot
+    ports:
+      # host port is configurable: SPOT_PORT=9000 docker compose up -d
+      # (8000 is often taken — on this machine by a Jitsi container)
+      - "${SPOT_PORT:-8010}:8000"
+    environment:
+      SPOT_GRACE_SECONDS: "${SPOT_GRACE_SECONDS:-90}"
+      SPOT_FORCE_STOP_AT: "${SPOT_FORCE_STOP_AT:-75}"
+      # real teardowns (stop + delete + task polling) need a real budget
+      SPOT_TEARDOWN_BUDGET: "${SPOT_TEARDOWN_BUDGET:-45}"
+      # live hypervisor: set SPOT_BACKEND=proxmox plus the values below
+      # (e.g. in a .env file next to this compose file)
+      SPOT_BACKEND: "${SPOT_BACKEND:-sim}"
+      SPOT_PROXMOX_HOST: "${SPOT_PROXMOX_HOST:-}"
+      SPOT_PROXMOX_NODE: "${SPOT_PROXMOX_NODE:-}"
+      SPOT_PROXMOX_TOKEN_ID: "${SPOT_PROXMOX_TOKEN_ID:-}"
+      SPOT_PROXMOX_TOKEN_SECRET: "${SPOT_PROXMOX_TOKEN_SECRET:-}"
+      SPOT_PROXMOX_TEMPLATE: "${SPOT_PROXMOX_TEMPLATE:-}"
+      SPOT_PROXMOX_STORAGE: "${SPOT_PROXMOX_STORAGE:-local-lvm}"
+    restart: unless-stopped

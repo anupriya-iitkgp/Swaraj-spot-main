@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "spot-dashboard",
+      "runtimeExecutable": ".venv/bin/uvicorn",
+      "runtimeArgs": ["spot.api.app:app", "--host", "127.0.0.1", "--port", "8010"],
+      "port": 8010,
+      "autoPort": false,
+      "env": {
+        "SPOT_GRACE_SECONDS": "25",
+        "SPOT_FORCE_STOP_AT": "20"
+      }
+    }
+  ]
+}

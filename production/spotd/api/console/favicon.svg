@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The pool, at 32px: reserved, cooling down, sellable. -->
+  <rect width="32" height="32" rx="7" fill="#0d0d0d"/>
+  <rect x="5"  y="18" width="6" height="9"  rx="2" fill="#3987e5"/>
+  <rect x="13" y="11" width="6" height="16" rx="2" fill="#d95926"/>
+  <rect x="21" y="5"  width="6" height="22" rx="2" fill="#199e70"/>
+</svg>
